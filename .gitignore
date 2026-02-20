@@ -209,3 +209,4 @@ __marimo__/
 #waveforms
 data/waveforms/*.wav
 data/raw_parquets/*.parquet
+data/
