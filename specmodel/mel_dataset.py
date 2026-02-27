@@ -1,10 +1,19 @@
 import os
 import numpy as np
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
+
+def get_dataset_splits(full_dataset, split, seed=None):
+    #seed_gen = torch.Generator().manual_seed(seed)
+    train_size = int(split*len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    #train_dataset, validation_dataset = random_split(full_dataset, [train_size, val_size], generator=seed_gen)
+    train_dataset, validation_dataset = random_split(full_dataset, [train_size, val_size])
+
+    return train_dataset, validation_dataset
 
 def collate_fn(batch):
-    mel_inputs, mel_targets, mask_starts = zip(*batch)
+    mel_inputs, mel_targets, mask_starts, _ = zip(*batch)
 
     mel_inputs = torch.stack(mel_inputs)      # (B, T, 80)
     mel_targets = torch.stack(mel_targets)    # (B, mask_T, 80)
@@ -37,7 +46,8 @@ class MelMaskedDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        mel = np.load(self.files[idx])      # (80, T)
+        filepath = self.files[idx]
+        mel = np.load(filepath)      # (80, T)
         mel = mel.T  # (T, 80)
 
         TARGET_FRAMES = int(30 * self.sr / self.hop_length) #expected num of frames in each 30 second snippet
@@ -62,5 +72,6 @@ class MelMaskedDataset(Dataset):
         return (
             torch.from_numpy(mel_input).float(),   # (T, 80)
             torch.from_numpy(mel_target).float(),  # (mask_T, 80)
-            mask_start
+            mask_start, 
+            filepath
         )
