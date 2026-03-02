@@ -210,3 +210,6 @@ __marimo__/
 data/waveforms/*.wav
 data/raw_parquets/*.parquet
 data/
+
+*.wav
+*.png

@@ -15,7 +15,8 @@ def write_to_waveform(filename, mel_tensor, generator, sr):
 
     mel_tensor = mel_tensor.T.unsqueeze(0).to(device)
 
-    print("Shape of mel_tensor: " , mel_tensor.size())
+    #must be (80, T) for HIFIGAN
+    #print("Shape of mel_tensor: " , mel_tensor.size())
 
     with torch.no_grad():
         audio_hifi = generator(mel_tensor).squeeze().cpu().numpy()
@@ -48,8 +49,8 @@ def compare_mels(groundtruth, predmel, sample_rate, hop_length):
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
-    print("gt_np.shape: ", gt_np.shape)
-    print("pred_np.shape: ", pred_np.shape)
+    #print("gt_np.shape: ", gt_np.shape)
+    #print("pred_np.shape: ", pred_np.shape)
 
     plt.figure(figsize=(14, 5))
 
