@@ -16,7 +16,7 @@ def train_mel(model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr
     model = model.to(device)
     print("Device: ", next(model.parameters()).device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-    criterion = torch.nn.L1Loss()
+    criterion = torch.nn.MSELoss()
     train_losses = []
     val_losses = []
 
@@ -96,19 +96,9 @@ def eval(model, dataset):
     model.eval()
     mel_input, mel_target, mask_start, filepath = dataset[0]
     print("filepath: ", filepath)
-    print("Mel_inputs type:" , type(mel_input))
-    print("Mel_inputs.shape:" , mel_input.shape)
-    print("Mel_targets type:" , type(mel_target))
-    print("Mel targets.shape: ", mel_target.shape)
-    print("mask starts type:" , type(mask_start))
-    print("mask starts: ", mask_start)
     ground_truth_mel = torch.vstack((mel_input[0:mask_start, ], mel_target))
-    print("ground_truth_mel:" , type(ground_truth_mel))
-    print(ground_truth_mel.shape)
-    print(ground_truth_mel)
-    
+    print("ground_truth_mel: \n" , ground_truth_mel)
     mel_input = mel_input.unsqueeze(0).to(device)
-    print("Mel_inputs.shape:" , mel_input.shape)
 
     with torch.no_grad():
         pred = model(mel_input)
@@ -118,7 +108,5 @@ def eval(model, dataset):
     pred_tail = pred[0, mask_start:]  # (mask_T, 80)
     mel_input = mel_input.squeeze(dim=0)
     full_mel_pred = torch.vstack((mel_input[0:mask_start, ], pred_tail))
-    print("full_mel_pred:" , type(full_mel_pred))
-    print(full_mel_pred.shape)
-    print(full_mel_pred)
+    print("full_mel_pred: \n", full_mel_pred)
     return ground_truth_mel, full_mel_pred

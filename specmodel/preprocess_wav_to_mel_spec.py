@@ -8,6 +8,24 @@ import io
 import soundfile as sf
 import pandas as pd
 import re
+import json
+
+try:
+    with open('config.json', 'r') as file:
+        mel_config = json.load(file)
+except FileNotFoundError:
+    print("Error: Mel config.json was not found.")
+    exit()
+
+N_MELS = mel_config['n_mels']
+SAMPLE_RATE = mel_config['sample_rate']
+N_FFT = mel_config['n_fft']
+WIN_LENGTH = mel_config['win_length']
+HOP_LENGTH = mel_config['hop_length']
+FMIN = mel_config['fmin']
+FMAX = mel_config['fmax']
+POWER = mel_config['power']
+LOG_TYPE = mel_config['log_type']
 
 def decode_row(audio_dict):
     y, sr = librosa.load(io.BytesIO(audio_dict['bytes']),
@@ -26,13 +44,13 @@ def convert_parquet_to_waveform():
     for i in range(0,15):
         
         #load all parquet files and convert them to their raw waveforms
-        out_dir = f"./data/waveforms/{i}-of-15"
+        out_dir = f"../data/waveforms/{i}-of-15"
         os.makedirs(out_dir, exist_ok=True)
 
         if(i<10):
-            df = pd.read_parquet(f'./data/raw_parquets/train-0000{i}-of-00015.parquet')
+            df = pd.read_parquet(f'../data/raw_parquets/train-0000{i}-of-00015.parquet')
         else:
-            df = pd.read_parquet(f'./data/raw_parquets/train-000{i}-of-00015.parquet')
+            df = pd.read_parquet(f'../data/raw_parquets/train-000{i}-of-00015.parquet')
 
         for idx, row in df.iterrows():
                     try:
@@ -52,27 +70,27 @@ def convert_waveform_to_mel_spec():
     total_counter = 0
     for i in range(0,15):
         counter = 0
-        directory = f'./data/waveforms/{i}-of-15'
-        out_dir = f'./data/mels/{i}-of-15'
+        directory = f'../data/waveforms/{i}-of-15'
+        out_dir = f'../data/mels/{i}-of-15'
         os.makedirs(out_dir, exist_ok=True)
 
         for entry in os.scandir(directory):  
             if entry.is_file():
                 filename = entry.name.split(".wav")[0]
-                samples, sample_rate = librosa.load(entry.path, sr=22050, mono=True) #consistent sampling rate and mono audio for all samples
+                samples, sample_rate = librosa.load(entry.path, sr=SAMPLE_RATE, mono=True) #consistent sampling rate and mono audio for all samples
                 #params needed for HIFI-GAN vocoder for output post processing
                 mel = librosa.feature.melspectrogram(y=samples,
                                                     sr=sample_rate,
-                                                    n_fft=1024,
-                                                    hop_length=256,
-                                                    win_length=1024,
-                                                    fmin=0.0, 
-                                                    fmax=8000.0, 
-                                                    n_mels=80, 
-                                                    power=1.0)
+                                                    n_fft=N_FFT,
+                                                    hop_length=HOP_LENGTH,
+                                                    win_length=WIN_LENGTH,
+                                                    fmin=FMIN, 
+                                                    fmax=FMAX, 
+                                                    n_mels=N_MELS, 
+                                                    power=POWER)
                 #use log to get to human perceptive loudness levels
                 mel_log = np.log(np.clip(mel, 1e-5, None))
-                np.save(f"./data/mels/{i}-of-15/{filename}.npy", mel_log.astype(np.float32))
+                np.save(f"../data/mels/{i}-of-15/{filename}.npy", mel_log.astype(np.float32))
                 counter += 1
                 total_counter += 1
 

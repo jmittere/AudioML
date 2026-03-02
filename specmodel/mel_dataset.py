@@ -1,7 +1,18 @@
 import os
+import json
 import numpy as np
 import torch
 from torch.utils.data import Dataset, random_split
+
+try:
+    with open('config.json', 'r') as file:
+        mel_config = json.load(file)
+except FileNotFoundError:
+    print("Error: Mel config.json was not found.")
+    exit()
+
+SAMPLE_RATE = mel_config['sample_rate']
+N_MELS = mel_config['n_mels']
 
 def get_dataset_splits(full_dataset, split, seed=None):
     #seed_gen = torch.Generator().manual_seed(seed)
