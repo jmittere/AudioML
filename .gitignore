@@ -212,4 +212,4 @@ data/raw_parquets/*.parquet
 data/
 
 *.wav
-*.png
+#*.png
