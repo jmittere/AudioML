@@ -17,6 +17,7 @@ class MelTransformer(nn.Module):
             d_model=d_model,
             nhead=n_heads,
             dim_feedforward=4 * d_model,
+            activation = "relu",
             dropout=dropout,
             batch_first=True
         )
