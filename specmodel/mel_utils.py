@@ -49,21 +49,44 @@ def compare_mels(groundtruth, predmel, sample_rate, hop_length):
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
-    #print("gt_np.shape: ", gt_np.shape)
-    #print("pred_np.shape: ", pred_np.shape)
+    print("gt_np.shape: ", gt_np.shape)
+    print("pred_np.shape: ", pred_np.shape)
+
+    #shared color scale
+    vmin = min(gt_np.min(), pred_np.min())
+    vmax = max(gt_np.max(), pred_np.max())
 
     plt.figure(figsize=(14, 5))
 
+    # --- Ground Truth ---
     plt.subplot(1, 2, 1)
-    librosa.display.specshow(gt_np, hop_length=hop_length,  sr=sample_rate, x_axis='time', y_axis='mel')
+    img1 = librosa.display.specshow(
+        gt_np,
+        hop_length=hop_length,
+        sr=sample_rate,
+        x_axis='time',
+        y_axis='mel',
+        cmap='plasma',
+        vmin=vmin,
+        vmax=vmax
+    )
     plt.title("Ground Truth")
-    plt.colorbar(format="%+2.0f", cmap='viridis', label="Log Mel energy (natural log not dB)")
+    plt.colorbar(img1, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
-
+    # --- Prediction ---
     plt.subplot(1, 2, 2)
-    librosa.display.specshow(pred_np, hop_length=hop_length, sr=sample_rate, x_axis='time', y_axis='mel')
+    img2 = librosa.display.specshow(
+        pred_np,
+        hop_length=hop_length,
+        sr=sample_rate,
+        x_axis='time',
+        y_axis='mel',
+        cmap='plasma',
+        vmin=vmin,
+        vmax=vmax
+    )
     plt.title("Prediction")
-    plt.colorbar(format="%+2.0f", cmap='viridis', label="Log Mel energy (natural log not dB)")
+    plt.colorbar(img2, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
     plt.savefig("mel_debug.png", dpi=300, bbox_inches="tight")
     plt.close()

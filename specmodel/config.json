@@ -1,5 +1,5 @@
 {
-  "n_mels": 80, 
+  "n_mels": 30, 
   "sample_rate": 22050, 
   "n_fft": 1024,
   "win_length": 1024, 
@@ -7,5 +7,11 @@
   "fmin": 0.0, 
   "fmax": 8000.0,
   "power": 1.0,
-  "log_type": "natural"
+  "log_type": "natural",
+  "clip_length": 10, 
+  "d_model": 256,
+  "n_heads": 4,
+  "n_layers": 6,
+  "dim_feedforward" : 1024,
+  "dropout": 0.1 
 }

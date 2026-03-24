@@ -29,12 +29,12 @@ def main():
     
     parser.add_argument("--mask_seconds", 
                         type=float, 
-                        default=5.0
+                        default=3.0
                         )
     
     parser.add_argument("--mel_dir", 
                         type=str, 
-                        default="../data/mels/0-of-15")
+                        default="../data/mels/1-of-15")
     
     parser.add_argument("--train_split", 
                         type=float, 
@@ -55,6 +55,7 @@ def main():
         print("Error: Mel config.json was not found.")
         exit()
 
+    #MEL SPEC PARAMS
     N_MELS = mel_config['n_mels']
     SAMPLE_RATE = mel_config['sample_rate']
     N_FFT = mel_config['n_fft']
@@ -64,6 +65,14 @@ def main():
     FMAX = mel_config['fmax']
     POWER = mel_config['power']
     LOG_TYPE = mel_config['log_type']
+    CLIP_LENGTH= mel_config['clip_length'] #in seconds
+
+    #MODEL PARAMS
+    D_MODEL = mel_config['d_model']
+    N_HEADS = mel_config['n_heads']
+    N_LAYERS = mel_config['n_layers']
+    D_FF = mel_config['dim_feedforward']
+    DROPOUT = mel_config['dropout']
 
     full_dataset = MelMaskedDataset(
     mel_dir=args.mel_dir,
@@ -79,10 +88,11 @@ def main():
     try:
         model = MelTransformer(
             n_mels=N_MELS, 
-            d_model=128, 
-            n_heads=4, 
-            n_layers=4,
-            dropout=0.1
+            d_model=D_MODEL, 
+            n_heads=N_HEADS, 
+            n_layers=N_LAYERS,
+            dim_feedforward=D_FF,
+            dropout=DROPOUT
         )
     
     except Exception as e: 
@@ -93,10 +103,11 @@ def main():
     
     print("Beginning Mel Training")
     train_mel(model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
-    ground_truth_mel, predicted_mel = eval(model, val_set)
-    generator = get_hifi_gan_generator()
-    write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
-    write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
+    seed_frames = int(CLIP_LENGTH - args.mask_seconds) #in seconds
+    ground_truth_mel, predicted_mel = eval(model, val_set, seed_seconds=seed_frames)
+    #generator = get_hifi_gan_generator()
+    #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
+    #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
     compare_mels(groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
 
 

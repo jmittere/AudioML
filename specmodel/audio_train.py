@@ -26,17 +26,18 @@ def train_mel(model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr
 
         progress = tqdm(train_dataloader,desc=f"Epoch {epoch}/{num_epochs}",leave=False)
 
-        for mel_inputs, mel_targets, mask_starts in progress:
-            loss = train_step(model, criterion, optimizer, mel_inputs, mel_targets, mask_starts)
+        for mel in progress:
+            loss = train_step(model, criterion, optimizer, mel)
             total_loss += loss
             progress.set_postfix(train_loss=f"{loss:.4f}")
 
         avg_loss = total_loss / len(train_dataloader)
         train_losses.append(avg_loss)
+
         avg_val_loss = validate(model, val_dataloader, criterion)
         val_losses.append(avg_val_loss)
-        print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}")
 
+        print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}")
 
     # Plot the loss curve
     plt.plot(train_losses, label="Train Loss")
@@ -48,23 +49,27 @@ def train_mel(model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr
     plt.savefig("training vs val loss.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-def train_step(model, criterion, optimizer, mel_inputs, mel_targets, mask_starts):
-    
-    mel_inputs = mel_inputs.to(device)
-    mel_targets = mel_targets.to(device)
-    preds = model(mel_inputs)  # (B, T, 80)
+def train_step(model, criterion, optimizer, mel):
 
-    # Collect predictions for masked region only
-    pred_tail = []
-    for b in range(preds.shape[0]):
-        start = mask_starts[b].item()
-        pred_tail.append(preds[b, start:start + mel_targets.shape[1]])
+    mel = mel.to(device)
 
-    pred_tail = torch.stack(pred_tail)
+    # shift for autoregressive training
+    x_input  = mel[:, :-1, :]   # (B, T-1, 80)
+    x_target = mel[:, 1:, :]    # (B, T-1, 80)
 
-    loss = criterion(pred_tail, mel_targets)
+    use_model_pred = torch.rand(1).item() < 0.1
+
+    #scheduled sampling randomly
+    if use_model_pred:
+        with torch.no_grad():
+            preds = model(x_input)
+        x_input = preds.detach()
+        
+
+    preds = model(x_input)
 
     optimizer.zero_grad()
+    loss = criterion(preds, x_target)
     loss.backward()
     optimizer.step()
 
@@ -75,38 +80,42 @@ def validate(model, dataloader, criterion):
     total_loss = 0.0
 
     with torch.no_grad():
-        for mel_inputs, mel_targets, mask_starts in dataloader:
-            mel_inputs = mel_inputs.to(device)
-            mel_targets = mel_targets.to(device)
+        for mel in dataloader:
+            mel = mel.to(device)
 
-            preds = model(mel_inputs)
+            x_input  = mel[:, :-1, :]
+            x_target = mel[:, 1:, :]
+            
 
-            pred_tail = []
-            for b in range(preds.shape[0]):
-                start = mask_starts[b].item()
-                pred_tail.append(preds[b, start:start + mel_targets.shape[1]])
+            preds = model(x_input)
 
-            pred_tail = torch.stack(pred_tail)
-            loss = criterion(pred_tail, mel_targets)
+            loss = criterion(preds, x_target)
             total_loss += loss.item()
 
     return total_loss / len(dataloader)
 
-def eval(model, dataset):
+def eval(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
-    mel_input, mel_target, mask_start, filepath = dataset[0]
-    print("filepath: ", filepath)
-    ground_truth_mel = torch.vstack((mel_input[0:mask_start, ], mel_target))
-    print("ground_truth_mel: \n" , ground_truth_mel)
-    mel_input = mel_input.unsqueeze(0).to(device)
+
+    mel = dataset[0]  # (T, 80)
+    mel = mel.to(device)
+
+    seed_frames = int(seed_seconds * sr / hop_length)
+
+    seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, 80)
+
+    generated = seed.clone()
+
+    num_future = mel.shape[0] - seed_frames
 
     with torch.no_grad():
-        pred = model(mel_input)
+        for _ in range(num_future):
+            preds = model(generated)
 
-    #pred_tail = pred[0, mask_start:].cpu().numpy()  # (mask_T, 80)
-    mel_input.to('cpu')
-    pred_tail = pred[0, mask_start:]  # (mask_T, 80)
-    mel_input = mel_input.squeeze(dim=0)
-    full_mel_pred = torch.vstack((mel_input[0:mask_start, ], pred_tail))
-    print("full_mel_pred: \n", full_mel_pred)
-    return ground_truth_mel, full_mel_pred
+            next_frame = preds[:, -1:, :]  # last timestep
+
+            generated = torch.cat([generated, next_frame], dim=1)
+
+    generated = generated.squeeze(0).cpu()
+
+    return mel.cpu(), generated

@@ -68,16 +68,24 @@ def convert_parquet_to_waveform():
 def convert_waveform_to_mel_spec():
     #Load the audio files from waveforms folder and convert to mel spectrograms
     total_counter = 0
+    max_len = SAMPLE_RATE * 10  # 10 seconds
+
     for i in range(0,15):
         counter = 0
         directory = f'../data/waveforms/{i}-of-15'
         out_dir = f'../data/mels/{i}-of-15'
         os.makedirs(out_dir, exist_ok=True)
 
+
         for entry in os.scandir(directory):  
             if entry.is_file():
                 filename = entry.name.split(".wav")[0]
                 samples, sample_rate = librosa.load(entry.path, sr=SAMPLE_RATE, mono=True) #consistent sampling rate and mono audio for all samples
+
+                #trim clips to 10 seconds
+                if len(samples) > max_len:
+                    samples = samples[:max_len]
+
                 #params needed for HIFI-GAN vocoder for output post processing
                 mel = librosa.feature.melspectrogram(y=samples,
                                                     sr=sample_rate,
