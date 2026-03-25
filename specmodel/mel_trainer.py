@@ -1,6 +1,6 @@
-from mel_model import MelTransformer
+from mel_model import MelTransformerFrameBin, MelTransformerFrame
 from mel_dataset import MelMaskedDataset, get_dataset_splits
-from audio_train import train_mel, eval
+from audio_train import train_mel, eval_frame, eval_framebin
 from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels
 import argparse
 
@@ -40,6 +40,11 @@ def main():
                         type=int, 
                         default=42
                         )
+    
+    parser.add_argument("--model", 
+                        type=str, 
+                        default="MelTransformerFrame"
+                        )
 
     args = parser.parse_args()
 
@@ -70,6 +75,7 @@ def main():
     D_FF = mel_config['dim_feedforward']
     DROPOUT = mel_config['dropout']
 
+    
     full_dataset = MelMaskedDataset(
     mel_dir=args.mel_dir,
     mask_seconds=MASK_SECONDS, 
@@ -83,29 +89,47 @@ def main():
     print("Validation dataset length: ", len(val_set))
 
     try:
-        model = MelTransformer(
+        if(args.model == "MelTransformerFrameBin"):
+            model = MelTransformerFrameBin(
             n_mels=N_MELS, 
             d_model=D_MODEL, 
             n_heads=N_HEADS, 
             n_layers=N_LAYERS,
             dim_feedforward=D_FF,
             dropout=DROPOUT
-        )
-    
+            )
+        elif(args.model == "MelTransformerFrame"):
+            model = MelTransformerFrame(
+            n_mels=N_MELS, 
+            d_model=D_MODEL, 
+            n_heads=N_HEADS, 
+            n_layers=N_LAYERS,
+            dim_feedforward=D_FF,
+            dropout=DROPOUT
+            )
+        else:
+            print("Unable to initialize...wrong model name")
+            exit()
+
     except Exception as e: 
         print("Unable to initialize")
         print(e)
-        exit()
-    
-    
-    print("Beginning Mel Training")
-    train_mel(model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
+        exit()    
+    print("--------------------------")
+    print(f"Beginning Mel Training for {args.model}...")
+    print(f"{args.model}: n_mels: {N_MELS}, d_model: {D_MODEL}, n_heads: {N_HEADS}, n_layers: {N_LAYERS}, dim_feedforward : {D_FF}, dropout: {DROPOUT}")
+    print("--------------------------")
+
+    train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
     seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
-    ground_truth_mel, predicted_mel = eval(model, val_set, seed_seconds=seed_frames)
+    if(args.model=="MelTransformerFrame"):
+        ground_truth_mel, predicted_mel = eval_frame(model, val_set, seed_seconds=seed_frames)
+    elif(args.model=="MelTransformerFrameBin"):
+        ground_truth_mel, predicted_mel = eval_framebin(model, val_set, seed_seconds=seed_frames)
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
     #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
-    compare_mels(groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
+    compare_mels(model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
 
 
 if __name__ == "__main__":

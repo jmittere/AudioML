@@ -45,7 +45,7 @@ def get_hifi_gan_generator():
     generator.remove_weight_norm()
     return generator
 
-def compare_mels(groundtruth, predmel, sample_rate, hop_length):
+def compare_mels(model_type, groundtruth, predmel, sample_rate, hop_length):
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
@@ -88,5 +88,5 @@ def compare_mels(groundtruth, predmel, sample_rate, hop_length):
     plt.title("Prediction")
     plt.colorbar(img2, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
-    plt.savefig("mel_debug.png", dpi=300, bbox_inches="tight")
+    plt.savefig(f"mel_debug_{model_type}.png", dpi=300, bbox_inches="tight")
     plt.close()
