@@ -53,20 +53,15 @@ def train_step(model, criterion, optimizer, mel):
 
     mel = mel.to(device)
 
-    # shift for autoregressive training
-    x_input  = mel[:, :-1, :]   # (B, T-1, 80)
-    x_target = mel[:, 1:, :]    # (B, T-1, 80)
+    B, T, F = mel.shape
 
-    use_model_pred = torch.rand(1).item() < 0.1
+    mel_flat = mel.reshape(B, T * F, 1)
 
-    #scheduled sampling randomly
-    if use_model_pred:
-        with torch.no_grad():
-            preds = model(x_input)
-        x_input = preds.detach()
-        
+    #Shift in flattened space, still using autoregressive training but now with prev freq frames too
+    x_input  = mel_flat[:, :-1, :]   # (B, L-1, 1)
+    x_target = mel_flat[:, 1:, :]    # (B, L-1, 1)
 
-    preds = model(x_input)
+    preds = model(x_input)           # (B, L-1, 1)
 
     optimizer.zero_grad()
     loss = criterion(preds, x_target)
@@ -83,9 +78,12 @@ def validate(model, dataloader, criterion):
         for mel in dataloader:
             mel = mel.to(device)
 
-            x_input  = mel[:, :-1, :]
-            x_target = mel[:, 1:, :]
-            
+            B, T, F = mel.shape
+
+            mel_flat = mel.reshape(B, T * F, 1)
+
+            x_input  = mel_flat[:, :-1, :]
+            x_target = mel_flat[:, 1:, :]
 
             preds = model(x_input)
 
@@ -97,25 +95,28 @@ def validate(model, dataloader, criterion):
 def eval(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
-    mel = dataset[0]  # (T, 80)
+    mel = dataset[0]  # (T, F)
     mel = mel.to(device)
 
     seed_frames = int(seed_seconds * sr / hop_length)
 
-    seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, 80)
+    seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, F)
 
-    generated = seed.clone()
+    #flatten
+    generated = seed.reshape(1, -1, 1)
 
-    num_future = mel.shape[0] - seed_frames
+    total_bins = mel.shape[0] * mel.shape[1]
+    seed_bins = generated.shape[1]
+
+    num_future = total_bins - seed_bins
 
     with torch.no_grad():
         for _ in range(num_future):
             preds = model(generated)
+            next_bin = preds[:, -1:, :]
+            generated = torch.cat([generated, next_bin], dim=1)
 
-            next_frame = preds[:, -1:, :]  # last timestep
+    #reshape back
+    generated = generated.reshape(1, mel.shape[0], mel.shape[1])
 
-            generated = torch.cat([generated, next_frame], dim=1)
-
-    generated = generated.squeeze(0).cpu()
-
-    return mel.cpu(), generated
+    return mel.cpu(), generated.squeeze(0).cpu()

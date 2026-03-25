@@ -26,6 +26,7 @@ FMIN = mel_config['fmin']
 FMAX = mel_config['fmax']
 POWER = mel_config['power']
 LOG_TYPE = mel_config['log_type']
+CLIP_LENGTH = mel_config['clip_length'] #clips the length of mel spec to this size in seconds
 
 def decode_row(audio_dict):
     y, sr = librosa.load(io.BytesIO(audio_dict['bytes']),
@@ -68,7 +69,7 @@ def convert_parquet_to_waveform():
 def convert_waveform_to_mel_spec():
     #Load the audio files from waveforms folder and convert to mel spectrograms
     total_counter = 0
-    max_len = SAMPLE_RATE * 10  # 10 seconds
+    max_len = SAMPLE_RATE * CLIP_LENGTH
 
     for i in range(0,15):
         counter = 0

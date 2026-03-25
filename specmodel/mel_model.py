@@ -10,7 +10,7 @@ def generate_causal_mask(T, device):
 class MelTransformer(nn.Module):
     def __init__(
         self,
-        n_mels=80,
+        n_mels,
         d_model=128,
         n_heads=4,
         n_layers=4,
@@ -21,9 +21,12 @@ class MelTransformer(nn.Module):
     ):
         super(MelTransformer, self).__init__()
 
-        self.input_proj = nn.Linear(n_mels, d_model)
+        self.input_proj = nn.Linear(1, d_model)
 
-        self.pos_embedding = nn.Parameter(torch.randn(1, max_len, d_model))
+        #TODO: change max_lemb_emb, T*F = ~26000
+        max_len_emb = 26000
+        #TODO: Implement specific frequency and time encodings
+        self.pos_embedding = nn.Parameter(torch.randn(1, max_len_emb, d_model))
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
@@ -39,24 +42,21 @@ class MelTransformer(nn.Module):
             num_layers=n_layers
         )
 
-        self.output_proj = nn.Linear(d_model, n_mels)
+        self.output_proj = nn.Linear(d_model, 1)
     
 
     def forward(self, x):
-        # x: (B, T, 80)
+        # x: (B, L, 1)
 
-        #input projection to encoder
-        x = self.input_proj(x)     # (B, T, D)
+        x = self.input_proj(x)  # (B, L, D)
 
-        #positional encoding
-        T = x.size(1)
-        x = x + self.pos_embedding[:, :T, :]
+        L = x.size(1)
+        x = x + self.pos_embedding[:, :L, :]
 
-        #causal mask
-        causal_mask = generate_causal_mask(T, x.device)
+        mask = generate_causal_mask(L, x.device)
 
-        x = self.transformer(x, mask=causal_mask)
+        x = self.transformer(x, mask=mask)
 
-        x = self.output_proj(x)    # (B, T, 80)
-    
+        x = self.output_proj(x)  # (B, L, 1)
+
         return x

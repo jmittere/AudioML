@@ -27,11 +27,6 @@ def main():
                         default=1e-4
                         )
     
-    parser.add_argument("--mask_seconds", 
-                        type=float, 
-                        default=3.0
-                        )
-    
     parser.add_argument("--mel_dir", 
                         type=str, 
                         default="../data/mels/1-of-15")
@@ -66,6 +61,7 @@ def main():
     POWER = mel_config['power']
     LOG_TYPE = mel_config['log_type']
     CLIP_LENGTH= mel_config['clip_length'] #in seconds
+    MASK_SECONDS= mel_config['mask_seconds'] #in seconds
 
     #MODEL PARAMS
     D_MODEL = mel_config['d_model']
@@ -76,9 +72,10 @@ def main():
 
     full_dataset = MelMaskedDataset(
     mel_dir=args.mel_dir,
-    mask_seconds=args.mask_seconds, 
+    mask_seconds=MASK_SECONDS, 
+    total_clip_length=CLIP_LENGTH,
     sr=SAMPLE_RATE, 
-    hop_length= HOP_LENGTH
+    hop_length= HOP_LENGTH 
     )
 
     train_set, val_set = get_dataset_splits(full_dataset, args.train_split)
@@ -103,7 +100,7 @@ def main():
     
     print("Beginning Mel Training")
     train_mel(model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
-    seed_frames = int(CLIP_LENGTH - args.mask_seconds) #in seconds
+    seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
     ground_truth_mel, predicted_mel = eval(model, val_set, seed_seconds=seed_frames)
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
