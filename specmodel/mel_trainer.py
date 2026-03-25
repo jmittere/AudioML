@@ -3,6 +3,7 @@ from mel_dataset import MelMaskedDataset, get_dataset_splits
 from audio_train import train_mel, eval_frame, eval_framebin
 from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels
 import argparse
+import time
 
 import json
 
@@ -120,12 +121,20 @@ def main():
     print(f"{args.model}: n_mels: {N_MELS}, d_model: {D_MODEL}, n_heads: {N_HEADS}, n_layers: {N_LAYERS}, dim_feedforward : {D_FF}, dropout: {DROPOUT}")
     print("--------------------------")
 
+    start_time = time.perf_counter()
+
     train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
+
+    end_time = time.perf_counter()
+    elapsed = end_time - start_time
+    print(f"\nTraining completed in {elapsed:.2f} seconds ({elapsed/60:.2f} minutes)")
+    
     seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
     if(args.model=="MelTransformerFrame"):
         ground_truth_mel, predicted_mel = eval_frame(model, val_set, seed_seconds=seed_frames)
     elif(args.model=="MelTransformerFrameBin"):
         ground_truth_mel, predicted_mel = eval_framebin(model, val_set, seed_seconds=seed_frames)
+
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
     #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
