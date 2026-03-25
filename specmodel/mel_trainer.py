@@ -76,6 +76,7 @@ def main():
     D_FF = mel_config['dim_feedforward']
     DROPOUT = mel_config['dropout']
 
+    max_time_frames = int(CLIP_LENGTH * SAMPLE_RATE / HOP_LENGTH)
     
     full_dataset = MelMaskedDataset(
     mel_dir=args.mel_dir,
@@ -92,12 +93,13 @@ def main():
     try:
         if(args.model == "MelTransformerFrameBin"):
             model = MelTransformerFrameBin(
-            n_mels=N_MELS, 
+            n_mels=N_MELS,
+            max_time_frames=max_time_frames, 
             d_model=D_MODEL, 
             n_heads=N_HEADS, 
             n_layers=N_LAYERS,
             dim_feedforward=D_FF,
-            dropout=DROPOUT
+            dropout=DROPOUT, 
             )
         elif(args.model == "MelTransformerFrame"):
             model = MelTransformerFrame(

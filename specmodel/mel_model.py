@@ -12,22 +12,22 @@ class MelTransformerFrameBin(nn.Module):
     def __init__(
         self,
         n_mels,
+        max_time_frames,
         d_model=128,
         n_heads=4,
         n_layers=4,
         dim_feedforward=512,
-        dropout=0.1,
-        max_len=2000  # for positional encoding
-
+        dropout=0.1
     ):
+        self.n_mels = n_mels
+        self.max_time_frames = max_time_frames
+
         super(MelTransformerFrameBin, self).__init__()
 
         self.input_proj = nn.Linear(1, d_model)
 
-        #TODO: change max_lemb_emb, T*F = ~26000
-        max_len_emb = 26000
-        #TODO: Implement specific frequency and time encodings
-        self.pos_embedding = nn.Parameter(torch.randn(1, max_len_emb, d_model))
+        self.time_embed = nn.Embedding(self.max_time_frames, d_model)
+        self.freq_embed = nn.Embedding(self.n_mels, d_model)
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
@@ -51,8 +51,20 @@ class MelTransformerFrameBin(nn.Module):
 
         x = self.input_proj(x)  # (B, L, D)
 
-        L = x.size(1)
-        x = x + self.pos_embedding[:, :L, :]
+        B, L, D = x.shape
+        F = self.n_mels
+
+        T = (L + F - 1) // F  # ceil division
+
+        time_indices = torch.arange(T, device=x.device).unsqueeze(1).expand(T, F).reshape(-1) #[0,0,0,..., 1,1,1,..., 2,2,2,...]
+        freq_indices = torch.arange(F, device=x.device).unsqueeze(0).expand(T, F).reshape(-1)
+
+        time_indices = time_indices[:L]
+        freq_indices = freq_indices[:L]
+
+        pos = self.time_embed(time_indices) + self.freq_embed(freq_indices)
+        pos = pos.unsqueeze(0)
+        x = x + pos
 
         mask = generate_causal_mask(L, x.device)
 
