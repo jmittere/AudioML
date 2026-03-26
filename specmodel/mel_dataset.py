@@ -3,6 +3,8 @@ import json
 import numpy as np
 import torch
 from torch.utils.data import Dataset, random_split
+import glob
+import random
 
 try:
     with open('config.json', 'r') as file:
@@ -33,18 +35,21 @@ class MelMaskedDataset(Dataset):
         mask_seconds=3.0,
         total_clip_length=10.0,
         sr=22050, #sampling rate of spectrogram
-        hop_length=256 #number of samples between frames
+        hop_length=256, #number of samples between frames
+        max_songs=527, #number of songs in dataset for training and val
+        seed=42
     ):
         self.sr = sr
         self.hop_length = hop_length
         self.mask_seconds = mask_seconds
         self.total_clip_length = total_clip_length
-        
-        self.files = []
-        for filename in sorted(os.listdir(mel_dir)):
-            if filename.endswith(".npy"):
-                full_path = os.path.join(mel_dir, filename)
-                self.files.append(full_path)
+        self.max_songs = max_songs
+
+        self.files = sorted(glob.glob(os.path.join(mel_dir, "**", "*.npy"), recursive=True))
+
+        if self.max_songs is not None:
+            random.seed(seed)
+            self.files = random.sample(self.files, min(self.max_songs, len(self.files)))
 
         #number of frames to be masked = mask seconds * sampling rate / hop_length
         self.mask_frames = int(mask_seconds * sr / hop_length)

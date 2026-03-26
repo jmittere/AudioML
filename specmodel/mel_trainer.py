@@ -75,6 +75,7 @@ def main():
     N_LAYERS = mel_config['n_layers']
     D_FF = mel_config['dim_feedforward']
     DROPOUT = mel_config['dropout']
+    MAX_SONGS = mel_config['max_songs']
 
     max_time_frames = int(CLIP_LENGTH * SAMPLE_RATE / HOP_LENGTH)
     
@@ -83,7 +84,8 @@ def main():
     mask_seconds=MASK_SECONDS, 
     total_clip_length=CLIP_LENGTH,
     sr=SAMPLE_RATE, 
-    hop_length= HOP_LENGTH 
+    hop_length= HOP_LENGTH, 
+    max_songs=MAX_SONGS 
     )
 
     train_set, val_set = get_dataset_splits(full_dataset, args.train_split)
