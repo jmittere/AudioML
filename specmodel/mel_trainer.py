@@ -135,14 +135,14 @@ def main():
     
     seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
     if(args.model=="MelTransformerFrame"):
-        ground_truth_mel, predicted_mel = eval_frame(model, val_set, seed_seconds=seed_frames)
+        ground_truth_mel, predicted_mel, filepath = eval_frame(model, val_set, seed_seconds=seed_frames)
     elif(args.model=="MelTransformerFrameBin"):
-        ground_truth_mel, predicted_mel = eval_framebin(model, val_set, seed_seconds=seed_frames)
+        ground_truth_mel, predicted_mel , filepath = eval_framebin(model, val_set, seed_seconds=seed_frames)
 
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
     #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
-    compare_mels(model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
+    compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
 
 
 if __name__ == "__main__":

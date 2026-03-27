@@ -26,7 +26,7 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
 
         progress = tqdm(train_dataloader,desc=f"Epoch {epoch}/{num_epochs}",leave=False)
 
-        for mel in progress:
+        for mel, _ in progress:
             if(model_type == "MelTransformerFrameBin"):
                 loss = train_step_framebin(model, criterion, optimizer, mel)
             elif(model_type == "MelTransformerFrame"):
@@ -83,7 +83,7 @@ def validate_framebin(model, dataloader, criterion):
     total_loss = 0.0
 
     with torch.no_grad():
-        for mel in dataloader:
+        for mel,_ in dataloader:
             mel = mel.to(device)
 
             B, T, F = mel.shape
@@ -103,7 +103,7 @@ def validate_framebin(model, dataloader, criterion):
 def eval_framebin(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
-    mel = dataset[0]  # (T, F)
+    mel, filepath = dataset[0]  # (T, F)
     mel = mel.to(device)
 
     seed_frames = int(seed_seconds * sr / hop_length)
@@ -127,7 +127,7 @@ def eval_framebin(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
     #reshape back
     generated = generated.reshape(1, mel.shape[0], mel.shape[1])
 
-    return mel.cpu(), generated.squeeze(0).cpu()
+    return mel.cpu(), generated.squeeze(0).cpu(), filepath
 
 #--------------------------------------------------------------#
 
@@ -163,7 +163,7 @@ def validate_frame(model, dataloader, criterion):
     total_loss = 0.0
 
     with torch.no_grad():
-        for mel in dataloader:
+        for mel, _ in dataloader:
             mel = mel.to(device)
 
             x_input  = mel[:, :-1, :]
@@ -180,7 +180,7 @@ def validate_frame(model, dataloader, criterion):
 def eval_frame(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
-    mel = dataset[0]  # (T, 80)
+    mel, filepath = dataset[0]  # (T, 80)
     mel = mel.to(device)
 
     seed_frames = int(seed_seconds * sr / hop_length)
@@ -201,4 +201,4 @@ def eval_frame(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
 
     generated = generated.squeeze(0).cpu()
 
-    return mel.cpu(), generated
+    return mel.cpu(), generated, filepath

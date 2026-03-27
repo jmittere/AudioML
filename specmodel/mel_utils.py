@@ -8,6 +8,7 @@ from models import Generator
 from env import AttrDict
 import matplotlib.pyplot as plt
 import librosa
+import os
 
 
 def write_to_waveform(filename, mel_tensor, generator, sr):
@@ -45,7 +46,7 @@ def get_hifi_gan_generator():
     generator.remove_weight_norm()
     return generator
 
-def compare_mels(model_type, groundtruth, predmel, sample_rate, hop_length):
+def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_length):
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
@@ -57,6 +58,10 @@ def compare_mels(model_type, groundtruth, predmel, sample_rate, hop_length):
     vmax = max(gt_np.max(), pred_np.max())
 
     plt.figure(figsize=(14, 5))
+
+    filename = os.path.basename(filepath)
+
+    plt.suptitle(f"{model_type} | {filepath}", fontsize=12)
 
     # --- Ground Truth ---
     plt.subplot(1, 2, 1)
@@ -88,5 +93,5 @@ def compare_mels(model_type, groundtruth, predmel, sample_rate, hop_length):
     plt.title("Prediction")
     plt.colorbar(img2, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
-    plt.savefig(f"mel_debug_{model_type}.png", dpi=300, bbox_inches="tight")
+    plt.savefig(f"mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
     plt.close()

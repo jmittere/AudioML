@@ -25,8 +25,9 @@ def get_dataset_splits(full_dataset, split, seed=None):
     return train_dataset, validation_dataset
 
 def collate_fn(batch):
-    mel = torch.stack(batch)  # (B, T, 80)
-    return mel
+    mels, paths = zip(*batch)
+    mels = torch.stack(mels)
+    return mels, list(paths)
 
 class MelMaskedDataset(Dataset):
     def __init__(
@@ -71,4 +72,4 @@ class MelMaskedDataset(Dataset):
             pad = np.zeros((pad_len, 80))
             mel = np.concatenate([mel, pad], axis=0)
 
-        return torch.from_numpy(mel).float()  # (T, 80)
+        return torch.from_numpy(mel).float(), filepath  # (T, 80)
