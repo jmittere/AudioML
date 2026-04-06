@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4):
+def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4, output_dir="../outputs"):
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=False)
@@ -53,7 +53,7 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
     plt.ylabel('Loss')
     plt.legend(loc="upper left")
     plt.title('Training and Validation Loss')
-    plt.savefig("training vs val loss.png", dpi=300, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/training vs val loss.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 ###-- training functions for frame*freq_bin autoregression --###
@@ -100,34 +100,38 @@ def validate_framebin(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_framebin(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
+def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
-    mel, filepath = dataset[0]  # (T, F)
-    mel = mel.to(device)
+    results=[]
 
-    seed_frames = int(seed_seconds * sr / hop_length)
+    for i in range(num_examples):
+        mel, filepath = dataset[i]  # (T, F)
+        mel = mel.to(device)
 
-    seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, F)
+        seed_frames = int(seed_seconds * sr / hop_length)
 
-    #flatten
-    generated = seed.reshape(1, -1, 1)
+        seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, F)
 
-    total_bins = mel.shape[0] * mel.shape[1]
-    seed_bins = generated.shape[1]
+        #flatten
+        generated = seed.reshape(1, -1, 1)
 
-    num_future = total_bins - seed_bins
+        total_bins = mel.shape[0] * mel.shape[1]
+        seed_bins = generated.shape[1]
 
-    with torch.no_grad():
-        for _ in range(num_future):
-            preds = model(generated)
-            next_bin = preds[:, -1:, :]
-            generated = torch.cat([generated, next_bin], dim=1)
+        num_future = total_bins - seed_bins
 
-    #reshape back
-    generated = generated.reshape(1, mel.shape[0], mel.shape[1])
+        with torch.no_grad():
+            for _ in range(num_future):
+                preds = model(generated)
+                next_bin = preds[:, -1:, :]
+                generated = torch.cat([generated, next_bin], dim=1)
 
-    return mel.cpu(), generated.squeeze(0).cpu(), filepath
+        #reshape back
+        generated = generated.reshape(1, mel.shape[0], mel.shape[1])
+        results.append((mel.cpu(),generated,filepath))
+
+    return results
 
 #--------------------------------------------------------------#
 
@@ -177,28 +181,28 @@ def validate_frame(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_frame(model, dataset, seed_seconds=7.0, sr=22050, hop_length=256):
+def eval_frame(model, dataset, num_examples=1, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
-    mel, filepath = dataset[0]  # (T, 80)
-    mel = mel.to(device)
+    results = []
 
-    seed_frames = int(seed_seconds * sr / hop_length)
+    for i in range(num_examples):
 
-    seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, 80)
+        mel, filepath = dataset[i]  # (T, 80)
+        mel = mel.to(device)
 
-    generated = seed.clone()
+        seed_frames = int(seed_seconds * sr / hop_length)
+        seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, 80)
+        generated = seed.clone()
 
-    num_future = mel.shape[0] - seed_frames
+        num_future = mel.shape[0] - seed_frames
+        with torch.no_grad():
+            for _ in range(num_future):
+                preds = model(generated)
+                next_frame = preds[:, -1:, :]  # last timestep
+                generated = torch.cat([generated, next_frame], dim=1)
 
-    with torch.no_grad():
-        for _ in range(num_future):
-            preds = model(generated)
+        generated = generated.squeeze(0).cpu()
+        results.append((mel.cpu(),generated,filepath))
 
-            next_frame = preds[:, -1:, :]  # last timestep
-
-            generated = torch.cat([generated, next_frame], dim=1)
-
-    generated = generated.squeeze(0).cpu()
-
-    return mel.cpu(), generated, filepath
+    return results

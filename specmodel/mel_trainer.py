@@ -6,8 +6,9 @@ import argparse
 import time
 
 import json
-
 import sys
+import os
+
 sys.path.append('../')
 
 def main(): 
@@ -30,7 +31,12 @@ def main():
     
     parser.add_argument("--mel_dir", 
                         type=str, 
-                        default="../data/mels/1-of-15")
+                        default="../data/mels")
+    
+    parser.add_argument("--output_dir", 
+                        type=str, 
+                        help="output directory for training vs val loss plots and spectrogram plots",
+                        default="../outputs")
     
     parser.add_argument("--train_split", 
                         type=float, 
@@ -46,9 +52,18 @@ def main():
                         type=str, 
                         default="MelTransformerFrame"
                         )
+    
+    parser.add_argument("--n_examples", 
+                        type=int, 
+                        help="number of examples to generate ground truth vs predicted plots for",
+                        default=2
+                        )
 
     args = parser.parse_args()
 
+    output_dir = args.output_dir + f"/{args.model}"
+    os.makedirs(output_dir, exist_ok=True)
+    
     try:
         with open('config.json', 'r') as file:
             mel_config = json.load(file)
@@ -125,25 +140,33 @@ def main():
     print(f"{args.model}: n_mels: {N_MELS}, d_model: {D_MODEL}, n_heads: {N_HEADS}, n_layers: {N_LAYERS}, dim_feedforward : {D_FF}, dropout: {DROPOUT}")
     print("--------------------------")
 
-    start_time = time.perf_counter()
+    start_time_train = time.perf_counter()
 
-    train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
+    train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir)
 
-    end_time = time.perf_counter()
-    elapsed = end_time - start_time
-    print(f"\nTraining completed in {elapsed:.2f} seconds ({elapsed/60:.2f} minutes)")
+    end_time_train = time.perf_counter()
+    elapsed_train = end_time_train - start_time_train
+    print(f"\nTraining completed in {elapsed_train:.2f} seconds ({elapsed_train/60:.2f} minutes)")
     
     seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
+    results=[]
+        
+    start_time_inference = time.perf_counter()
+
     if(args.model=="MelTransformerFrame"):
-        ground_truth_mel, predicted_mel, filepath = eval_frame(model, val_set, seed_seconds=seed_frames)
+        results = eval_frame(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
     elif(args.model=="MelTransformerFrameBin"):
-        ground_truth_mel, predicted_mel , filepath = eval_framebin(model, val_set, seed_seconds=seed_frames)
+        results = eval_framebin(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
+
+    end_time_inference = time.perf_counter()
+    elapsed_inference = end_time_inference - start_time_inference
+    print(f"\nInference completed in {elapsed_inference:.2f} seconds ({elapsed_inference/60:.2f} minutes)")
 
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
     #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
-    compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH)
-
+    for ground_truth_mel, predicted_mel, filepath in results:
+        compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
 
 if __name__ == "__main__":
     main()
