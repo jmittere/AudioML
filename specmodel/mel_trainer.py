@@ -58,6 +58,12 @@ def main():
                         help="number of examples to generate ground truth vs predicted plots for",
                         default=2
                         )
+    
+    parser.add_argument("--save_model", 
+                        type=bool, 
+                        help="True = Save model, False = Don't save model, Default=False",
+                        default=False
+                        )
 
     args = parser.parse_args()
 
@@ -142,7 +148,10 @@ def main():
 
     start_time_train = time.perf_counter()
 
-    train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir)
+    if(args.save_model):
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7, save_path=f"../outputs/{args.model}_best.pt")
+    else:
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7)
 
     end_time_train = time.perf_counter()
     elapsed_train = end_time_train - start_time_train

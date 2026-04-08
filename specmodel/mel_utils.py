@@ -52,8 +52,8 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
-    print("gt_np.shape: ", gt_np.shape)
-    print("pred_np.shape: ", pred_np.shape)
+    #print("gt_np.shape: ", gt_np.shape)
+    #print("pred_np.shape: ", pred_np.shape)
 
     #shared color scale
     vmin = min(gt_np.min(), pred_np.min())

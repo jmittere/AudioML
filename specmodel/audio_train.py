@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4, output_dir="../outputs"):
+def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4, output_dir="../outputs", patience=7, min_delta=1e-4, save_path=None):
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=False)
@@ -19,6 +19,9 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
     criterion = torch.nn.MSELoss()
     train_losses = []
     val_losses = []
+
+    best_val_loss = float(999999)
+    epochs_without_improvement = 0
 
     for epoch in range(1, num_epochs+1):
         model.train()
@@ -45,6 +48,24 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
         val_losses.append(avg_val_loss)
 
         print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}")
+
+        #Early stopping
+        if avg_val_loss < best_val_loss - min_delta:
+            best_val_loss = avg_val_loss
+            epochs_without_improvement = 0
+            if save_path is not None:
+                torch.save(model.state_dict(), save_path)
+                #print(f"saved best model to {save_path}")
+
+        else:
+            epochs_without_improvement += 1
+            print(f"No improvement for {epochs_without_improvement} epochs")
+
+        #Stop training
+        if epochs_without_improvement >= patience:
+            print(f"Early stopping triggered after {epoch} epochs")
+            break
+
 
     # Plot the loss curve
     plt.plot(train_losses, label="Train Loss")
@@ -128,7 +149,7 @@ def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop
                 generated = torch.cat([generated, next_bin], dim=1)
 
         #reshape back
-        generated = generated.reshape(1, mel.shape[0], mel.shape[1])
+        generated = generated.reshape(mel.shape[0], mel.shape[1])
         results.append((mel.cpu(),generated,filepath))
 
     return results
