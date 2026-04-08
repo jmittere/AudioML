@@ -1,7 +1,7 @@
 from mel_model import MelTransformerFrameBin, MelTransformerFrame
 from mel_dataset import MelMaskedDataset, get_dataset_splits
 from audio_train import train_mel, eval_frame, eval_framebin
-from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels
+from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels, generate_waveforms
 import argparse
 import time
 
@@ -174,8 +174,16 @@ def main():
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
     #write_to_waveform("predicted_wav.wav", predicted_mel, generator, SAMPLE_RATE)
+
+    start_time_reconstruct = time.perf_counter()
+
     for ground_truth_mel, predicted_mel, filepath in results:
         compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
+        generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
+        
+    end_time_reconstruct = time.perf_counter()
+    elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct
+    print(f"\nReconstruction completed in {elapsed_reconstruct:.2f} seconds ({elapsed_reconstruct/60:.2f} minutes)")
 
 if __name__ == "__main__":
     main()

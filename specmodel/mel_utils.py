@@ -11,8 +11,6 @@ import librosa
 import os
 from datetime import datetime
 
-
-
 def write_to_waveform(filename, mel_tensor, generator, sr):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,7 +59,7 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
 
     plt.figure(figsize=(14, 5))
 
-    filename = os.path.basename(filepath)
+    filename = os.path.basename(filepath).rstrip(".npy")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     plt.suptitle(f"{model_type} | {filepath} | {timestamp}", fontsize=12)
@@ -98,3 +96,43 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
 
     plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
     plt.close()
+
+def generate_waveforms(filepath, model_type, groundtruth, predmel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, output_dir="../outputs"):
+    #generate waveforms of predicted and also ground truth with griffin lim for a fair reconstruction comparison
+    gt_np = groundtruth.detach().cpu().numpy().T
+    pred_np = predmel.detach().cpu().numpy().T
+    #print("gt_np.shape: ", gt_np.shape)
+    #print("pred_np.shape: ", pred_np.shape)
+    # Undo natural log
+    gt_np = np.exp(gt_np)
+    pred_np = np.exp(pred_np)
+
+    filename = os.path.basename(filepath).rstrip(".npy")
+
+    audio_pred = librosa.feature.inverse.mel_to_audio(
+        pred_np,
+        sr=sample_rate,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        n_iter=n_iter, #number of iterations for griffin lim
+        win_length=win_length, 
+        fmin=fmin, 
+        fmax=fmax
+    )
+    #ensure amplitudes are in safe range and doesn't blow speakers
+    audio_pred /= (np.max(np.abs(audio_pred)) + 1e-9)
+    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_pred.wav", audio_pred, sample_rate)
+
+    audio_gt = librosa.feature.inverse.mel_to_audio(
+        gt_np,
+        sr=sample_rate,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        n_iter=n_iter, #number of iterations for griffin lim
+        win_length=win_length, 
+        fmin=fmin, 
+        fmax=fmax
+    )
+    #ensure amplitudes are in safe range and doesn't blow speakers
+    audio_gt /= (np.max(np.abs(audio_gt)) + 1e-9)
+    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_gt.wav", audio_gt, sample_rate)
