@@ -149,9 +149,9 @@ def main():
     start_time_train = time.perf_counter()
 
     if(args.save_model):
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7, save_path=f"../outputs/{args.model}_best.pt")
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=2, save_path=f"../outputs/{args.model}_best.pt")
     else:
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7)
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=2)
 
     end_time_train = time.perf_counter()
     elapsed_train = end_time_train - start_time_train
@@ -180,7 +180,7 @@ def main():
     for ground_truth_mel, predicted_mel, filepath in results:
         compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
         generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
-        
+
     end_time_reconstruct = time.perf_counter()
     elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct
     print(f"\nReconstruction completed in {elapsed_reconstruct:.2f} seconds ({elapsed_reconstruct/60:.2f} minutes)")

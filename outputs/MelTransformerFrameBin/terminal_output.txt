@@ -1,0 +1,34 @@
+python mel_trainer.py --epochs 15 --model MelTransformerFrameBin --save_model True --n_examples 30 
+Train dataset length:  3200
+Validation dataset length:  800
+--------------------------
+Beginning Mel Training for MelTransformerFrameBin...
+MelTransformerFrameBin: n_mels: 20, d_model: 128, n_heads: 4, n_layers: 4, dim_feedforward : 512, dropout: 0.1
+--------------------------
+Device:  cuda:0
+Epoch 1/15:   0%|                                                                                                                                                                                                                                                                                                                  | 0/1600 [00:00<?, ?it/s]C:\Users\justi\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\functional.py:5560: UserWarning: 1Torch was not compiled with flash attention. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\aten\src\ATen\native\transformers\cuda\sdp_utils.cpp:555.)
+  attn_output = scaled_dot_product_attention(q, k, v, attn_mask, dropout_p, is_causal)
+Epoch 1: avg_train_loss = 0.6226, avg_val_loss = 0.3943                                                                                                                                                                                                                                                                                                     
+Epoch 2: avg_train_loss = 0.3399, avg_val_loss = 0.2966                                                                                                                                                                                                                                                                                                     
+Epoch 3: avg_train_loss = 0.3049, avg_val_loss = 0.3715                                                                                                                                                                                                                                                                                                     
+No improvement for 1 epochs
+Epoch 4: avg_train_loss = 0.2907, avg_val_loss = 0.2558                                                                                                                                                                                                                                                                                                     
+Epoch 5: avg_train_loss = 0.2577, avg_val_loss = 0.2594                                                                                                                                                                                                                                                                                                     
+No improvement for 1 epochs
+Epoch 6: avg_train_loss = 0.2353, avg_val_loss = 0.2104                                                                                                                                                                                                                                                                                                     
+Epoch 7: avg_train_loss = 0.2068, avg_val_loss = 0.1763                                                                                                                                                                                                                                                                                                     
+Epoch 8: avg_train_loss = 0.1710, avg_val_loss = 0.1426                                                                                                                                                                                                                                                                                                     
+Epoch 9: avg_train_loss = 0.1507, avg_val_loss = 0.1194                                                                                                                                                                                                                                                                                                     
+Epoch 10: avg_train_loss = 0.1321, avg_val_loss = 0.1092                                                                                                                                                                                                                                                                                                    
+Epoch 11: avg_train_loss = 0.1268, avg_val_loss = 0.0945                                                                                                                                                                                                                                                                                                    
+Epoch 12: avg_train_loss = 0.1171, avg_val_loss = 0.0896                                                                                                                                                                                                                                                                                                    
+Epoch 13: avg_train_loss = 0.1059, avg_val_loss = 0.0946                                                                                                                                                                                                                                                                                                    
+No improvement for 1 epochs
+Epoch 14: avg_train_loss = 0.1026, avg_val_loss = 0.0797                                                                                                                                                                                                                                                                                                    
+Epoch 15: avg_train_loss = 0.0950, avg_val_loss = 0.0736                                                                                                                                                                                                                                                                                                    
+
+Training completed in 82085.67 seconds (1368.09 minutes)
+
+Inference completed in 3811.89 seconds (63.53 minutes)
+
+Reconstruction completed in 99.61 seconds (1.66 minutes)
