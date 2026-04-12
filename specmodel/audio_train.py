@@ -134,6 +134,8 @@ def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop
 
         seed = mel[:seed_frames].unsqueeze(0)  # (1, T_seed, F)
 
+        baseline = get_repeated_last_frame_baseline(mel, seed, seed_frames)
+
         #flatten
         generated = seed.reshape(1, -1, 1)
 
@@ -150,7 +152,8 @@ def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop
 
         #reshape back
         generated = generated.reshape(mel.shape[0], mel.shape[1])
-        results.append((mel.cpu(),generated,filepath))
+        metrics = evaluate_preds(mel.cpu(),generated,baseline.cpu(),seed_frames)
+        results.append((mel.cpu(),generated,baseline.cpu(),filepath,metrics))
 
     return results
 
@@ -224,6 +227,43 @@ def eval_frame(model, dataset, num_examples=1, seed_seconds=7.0, sr=22050, hop_l
                 generated = torch.cat([generated, next_frame], dim=1)
 
         generated = generated.squeeze(0).cpu()
-        results.append((mel.cpu(),generated,filepath))
+        baseline = get_repeated_last_frame_baseline(mel, seed, seed_frames)
+        metrics = evaluate_preds(mel.cpu(),generated,baseline.cpu(),seed_frames)
+        results.append((mel.cpu(),generated,baseline.cpu(),filepath,metrics))
 
     return results
+
+def get_repeated_last_frame_baseline(mel, seed, seed_frames):
+    num_future_frames = mel.shape[0] - seed_frames
+    #get last timestep for all frequencies in seed frame
+    last_frame = seed[:, -1:, :] #(1,1,n_mels)
+
+    #repeat for future timesteps
+    repeated_frames = last_frame.repeat(1,num_future_frames, 1) #(1,num_future,n_mels)
+    baseline = torch.cat([seed, repeated_frames], dim=1) #stitch seed and repeated last frame baseline
+    baseline = baseline.squeeze(0)
+    return baseline
+
+def evaluate_preds(gt, pred, baseline, seed_frames):
+    gt = gt.cpu()
+    pred = pred.cpu()
+    baseline = baseline.cpu()
+    gt_future = gt[seed_frames:]
+    pred_future = pred[seed_frames:]
+    baseline_future = baseline[seed_frames:]
+
+    mse_model = torch.mean((pred_future - gt_future) ** 2)
+    mse_baseline = torch.mean((baseline_future - gt_future) ** 2)
+
+    mae_model = torch.mean(torch.abs(pred_future - gt_future))
+    mae_baseline = torch.mean(torch.abs(baseline_future - gt_future))
+
+    improvement = (mse_baseline - mse_model) / (mse_baseline + 1e-8)
+
+    return {
+        "mse_model": mse_model.item(),
+        "mse_baseline": mse_baseline.item(),
+        "mae_model": mae_model.item(),
+        "mae_baseline": mae_baseline.item(),
+        "improvement": improvement.item()
+    }

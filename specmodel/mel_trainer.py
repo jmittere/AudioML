@@ -38,6 +38,11 @@ def main():
                         help="output directory for training vs val loss plots and spectrogram plots",
                         default="../outputs")
     
+    parser.add_argument("--outputs", 
+                        type=bool, 
+                        help="whether or not to generate spectrogram heatmap plots and waveforms, default=True",
+                        default=True)
+    
     parser.add_argument("--train_split", 
                         type=float, 
                         default=0.8
@@ -149,13 +154,13 @@ def main():
     start_time_train = time.perf_counter()
 
     if(args.save_model):
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=2, save_path=f"../outputs/{args.model}_best.pt")
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=3, save_path=f"../outputs/{args.model}_best.pt")
     else:
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=2)
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=3)
 
     end_time_train = time.perf_counter()
     elapsed_train = end_time_train - start_time_train
-    print(f"\nTraining completed in {elapsed_train:.2f} seconds ({elapsed_train/60:.2f} minutes)")
+    print(f"Training completed in {elapsed_train:.2f} seconds ({elapsed_train/60:.2f} minutes)")
     
     seed_frames = int(CLIP_LENGTH - MASK_SECONDS) #in seconds
     results=[]
@@ -169,7 +174,7 @@ def main():
 
     end_time_inference = time.perf_counter()
     elapsed_inference = end_time_inference - start_time_inference
-    print(f"\nInference completed in {elapsed_inference:.2f} seconds ({elapsed_inference/60:.2f} minutes)")
+    print(f"Inference completed in {elapsed_inference:.2f} seconds ({elapsed_inference/60:.2f} minutes)")
 
     #generator = get_hifi_gan_generator()
     #write_to_waveform("ground_truth_wav.wav", ground_truth_mel, generator, SAMPLE_RATE)
@@ -177,13 +182,30 @@ def main():
 
     start_time_reconstruct = time.perf_counter()
 
-    for ground_truth_mel, predicted_mel, filepath in results:
-        compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
-        generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
+    avg_mse_model=0 
+    avg_mae_model=0
+    avg_mse_baseline=0
+    avg_mae_baseline=0
+    avg_mse_improvement=0
+
+    if(args.outputs):
+        for ground_truth_mel, predicted_mel, baseline_mel, filepath, metrics in results:
+            avg_mse_model+=metrics['mse_model']
+            avg_mae_model+=metrics['mae_model']
+            avg_mse_baseline+=metrics['mse_baseline']
+            avg_mae_baseline+=metrics['mae_baseline']
+            avg_mse_improvement+=metrics['improvement']
+            compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
+            generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
 
     end_time_reconstruct = time.perf_counter()
     elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct
-    print(f"\nReconstruction completed in {elapsed_reconstruct:.2f} seconds ({elapsed_reconstruct/60:.2f} minutes)")
+    print(f"Reconstruction completed in {elapsed_reconstruct:.2f} seconds ({elapsed_reconstruct/60:.2f} minutes)")
+
+    print("--------------------------")
+    print(f"Avg MSE Model: {avg_mse_model/args.n_examples} , Avg MAE Model: {avg_mae_model/args.n_examples}")
+    print(f"Avg MSE Baseline: {avg_mse_baseline/args.n_examples}, Avg MAE Baseline: {avg_mae_baseline/args.n_examples}")
+    print(f"Avg MSE Improvement Compared to Baseline: {avg_mse_improvement/args.n_examples}")
 
 if __name__ == "__main__":
     main()

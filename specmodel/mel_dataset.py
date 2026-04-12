@@ -73,3 +73,9 @@ class MelMaskedDataset(Dataset):
             mel = np.concatenate([mel, pad], axis=0)
 
         return torch.from_numpy(mel).float(), filepath  # (T, 80)
+    
+    def get_mel_shape(self, idx=1):
+        filepath = self.files[idx]
+        mel = np.load(filepath)
+        mel = mel.T
+        return mel.shape, type(mel)

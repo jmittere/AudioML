@@ -46,18 +46,20 @@ def get_hifi_gan_generator():
     generator.remove_weight_norm()
     return generator
 
-def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_length, output_dir="../outputs"):
+def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_rate, hop_length, output_dir="../outputs"):
     #mel specs are (2583, 80) #time x n_mels, librosa expects n_mels x time
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
+    baseline_np = baseline.detach().cpu().numpy().T
+
     #print("gt_np.shape: ", gt_np.shape)
     #print("pred_np.shape: ", pred_np.shape)
 
     #shared color scale
-    vmin = min(gt_np.min(), pred_np.min())
-    vmax = max(gt_np.max(), pred_np.max())
+    vmin = min(gt_np.min(), pred_np.min(), baseline_np.min())
+    vmax = max(gt_np.max(), pred_np.max(), baseline_np.max())
 
-    plt.figure(figsize=(14, 5))
+    plt.figure(figsize=(18, 5))
 
     filename = os.path.basename(filepath).rstrip(".npy")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -65,7 +67,7 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
     plt.suptitle(f"{model_type} | {filepath} | {timestamp}", fontsize=12)
 
     # --- Ground Truth ---
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     img1 = librosa.display.specshow(
         gt_np,
         hop_length=hop_length,
@@ -80,7 +82,7 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
     plt.colorbar(img1, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
     # --- Prediction ---
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 2)
     img2 = librosa.display.specshow(
         pred_np,
         hop_length=hop_length,
@@ -94,37 +96,51 @@ def compare_mels(filepath, model_type, groundtruth, predmel, sample_rate, hop_le
     plt.title("Prediction")
     plt.colorbar(img2, format="%+2.0f", label="Log Mel energy (natural log not dB)")
 
+    # --- Baseline ---
+    plt.subplot(1, 3, 3)
+    img3 = librosa.display.specshow(
+        baseline_np,
+        hop_length=hop_length,
+        sr=sample_rate,
+        x_axis='time',
+        y_axis='mel',
+        cmap='plasma',
+        vmin=vmin,
+        vmax=vmax
+    )
+    plt.title("Baseline")
+    plt.colorbar(img3, format="%+2.0f", label="Log Mel energy (natural log not dB)")
+
     plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-def generate_waveforms(filepath, model_type, groundtruth, predmel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, output_dir="../outputs"):
+def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, output_dir="../outputs"):
     #generate waveforms of predicted and also ground truth with griffin lim for a fair reconstruction comparison
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
+    baseline_np = predmel.detach().cpu().numpy().T
+
     #print("gt_np.shape: ", gt_np.shape)
     #print("pred_np.shape: ", pred_np.shape)
     # Undo natural log
     gt_np = np.exp(gt_np)
     pred_np = np.exp(pred_np)
+    baseline_np = np.exp(baseline_np)
 
     filename = os.path.basename(filepath).rstrip(".npy")
+    
+    audio_pred = _get_waveform(pred_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
+    audio_gt = _get_waveform(gt_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
+    audio_base = _get_waveform(baseline_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
 
-    audio_pred = librosa.feature.inverse.mel_to_audio(
-        pred_np,
-        sr=sample_rate,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        n_iter=n_iter, #number of iterations for griffin lim
-        win_length=win_length, 
-        fmin=fmin, 
-        fmax=fmax
-    )
-    #ensure amplitudes are in safe range and doesn't blow speakers
-    audio_pred /= (np.max(np.abs(audio_pred)) + 1e-9)
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_pred.wav", audio_pred, sample_rate)
+    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_gt.wav", audio_gt, sample_rate)
+    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_bl.wav", audio_base, sample_rate)
 
-    audio_gt = librosa.feature.inverse.mel_to_audio(
-        gt_np,
+
+def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax):
+    audio = librosa.feature.inverse.mel_to_audio(
+        mel,
         sr=sample_rate,
         n_fft=n_fft,
         hop_length=hop_length,
@@ -134,5 +150,5 @@ def generate_waveforms(filepath, model_type, groundtruth, predmel, sample_rate, 
         fmax=fmax
     )
     #ensure amplitudes are in safe range and doesn't blow speakers
-    audio_gt /= (np.max(np.abs(audio_gt)) + 1e-9)
-    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_gt.wav", audio_gt, sample_rate)
+    audio /= (np.max(np.abs(audio)) + 1e-9)
+    return audio
