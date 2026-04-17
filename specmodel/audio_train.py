@@ -34,6 +34,8 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
                 loss = train_step_framebin(model, criterion, optimizer, mel)
             elif(model_type == "MelTransformerFrame"):
                 loss = train_step_frame(model, criterion, optimizer, mel)
+            elif(model_type == "MelTransformerFrameDelta"):
+                loss = train_step_frame_delta(model, criterion, optimizer, mel)
             total_loss += loss
             progress.set_postfix(train_loss=f"{loss:.4f}")
 
@@ -44,6 +46,8 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
             avg_val_loss = validate_framebin(model, val_dataloader, criterion)
         elif(model_type == "MelTransformerFrame"):
             avg_val_loss = validate_frame(model, val_dataloader, criterion)
+        elif(model_type == "MelTransformerFrameDelta"):
+            avg_val_loss = validate_frame_delta(model, val_dataloader, criterion)
 
         val_losses.append(avg_val_loss)
 
@@ -160,7 +164,7 @@ def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop
 #--------------------------------------------------------------#
 
 ###-- training functions for full frame autoregression --###
-def train_step_frame(model, criterion, optimizer, mel):
+def train_step_frame(model, criterion, optimizer, mel,scheduled_sampling_prob=0.15):
 
     mel = mel.to(device)
 
@@ -168,16 +172,18 @@ def train_step_frame(model, criterion, optimizer, mel):
     x_input  = mel[:, :-1, :]   # (B, T-1, 80)
     x_target = mel[:, 1:, :]    # (B, T-1, 80)
 
-    use_model_pred = torch.rand(1).item() < 0.1
+    B, T, F = x_input.shape
+    with torch.no_grad():
+        preds = model(x_input)
 
-    #scheduled sampling randomly
-    if use_model_pred:
-        with torch.no_grad():
-            preds = model(x_input)
-        x_input = preds.detach()
-        
+    #Create mask for scheduled sampling
+    mask = (torch.rand(B, T, 1, device=x_input.device) < scheduled_sampling_prob)
 
-    preds = model(x_input)
+    #Mix ground truth and predictions
+    x_mixed = torch.where(mask, preds, x_input)
+
+    #Forward pass
+    preds = model(x_mixed)
 
     optimizer.zero_grad()
     loss = criterion(preds, x_target)
@@ -205,7 +211,7 @@ def validate_frame(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_frame(model, dataset, num_examples=1, seed_seconds=7.0, sr=22050, hop_length=256):
+def eval_frame(model, dataset, num_examples, seed_seconds, sr=22050, hop_length=256):
     model.eval()
 
     results = []
@@ -232,6 +238,82 @@ def eval_frame(model, dataset, num_examples=1, seed_seconds=7.0, sr=22050, hop_l
         results.append((mel.cpu(),generated,baseline.cpu(),filepath,metrics))
 
     return results
+
+#--------------------------------------------------------------#
+
+###-- training functions for full frame delta autoregression --###
+def train_step_frame_delta(model, criterion, optimizer, mel):
+
+    mel = mel.to(device)
+
+    #shift
+    x_input  = mel[:, :-1, :]   # (B, T-1, F)
+    x_target = mel[:, 1:, :]    # (B, T-1, F)
+
+    #residual target
+    delta_target = x_target - x_input
+
+    #Forward pass
+    delta_pred = model(x_input)
+
+    optimizer.zero_grad()
+    loss = criterion(delta_pred, delta_target)
+    loss.backward()
+    optimizer.step()
+
+    return loss.item()
+
+def validate_frame_delta(model, dataloader, criterion):
+    model.eval()
+    total_loss = 0.0
+
+    with torch.no_grad():
+        for mel, _ in dataloader:
+            mel = mel.to(device)
+
+            x_input  = mel[:, :-1, :]
+            x_target = mel[:, 1:, :]
+
+            delta_target = x_target - x_input
+            delta_pred = model(x_input)
+
+            loss = criterion(delta_pred, delta_target)
+            total_loss += loss.item()
+
+    return total_loss / len(dataloader)
+
+def eval_frame_delta(model, dataset, num_examples, seed_seconds, sr=22050, hop_length=256):
+    model.eval()
+
+    results = []
+
+    for i in range(num_examples):
+
+        mel, filepath = dataset[i]
+        mel = mel.to(device)
+
+        seed_frames = int(seed_seconds * sr / hop_length)
+        seed = mel[:seed_frames].unsqueeze(0)
+
+        generated = seed.clone()
+
+        num_future = mel.shape[0] - seed_frames
+
+        with torch.no_grad():
+            for _ in range(num_future):
+                delta = model(generated) # (1, T, F)
+                delta_last = delta[:, -1:, :] #last timestep delta, difference between xt-1 and xt
+                last_frame = generated[:, -1:, :]
+                next_frame = last_frame + delta_last
+                generated = torch.cat([generated, next_frame], dim=1)
+
+        generated = generated.squeeze(0).cpu()
+        baseline = get_repeated_last_frame_baseline(mel, seed, seed_frames)
+        metrics = evaluate_preds(mel.cpu(),generated,baseline.cpu(),seed_frames)
+        results.append((mel.cpu(), generated, baseline.cpu(), filepath, metrics))
+
+    return results
+
 
 def get_repeated_last_frame_baseline(mel, seed, seed_frames):
     num_future_frames = mel.shape[0] - seed_frames

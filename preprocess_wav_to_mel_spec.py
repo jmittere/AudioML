@@ -11,7 +11,7 @@ import re
 import json
 
 try:
-    with open('config.json', 'r') as file:
+    with open('./specmodel/config.json', 'r') as file:
         mel_config = json.load(file)
 except FileNotFoundError:
     print("Error: Mel config.json was not found.")
@@ -45,13 +45,13 @@ def convert_parquet_to_waveform():
     for i in range(0,15):
         
         #load all parquet files and convert them to their raw waveforms
-        out_dir = f"../data/waveforms/{i}-of-15"
+        out_dir = f"./data/waveforms/{i}-of-15"
         os.makedirs(out_dir, exist_ok=True)
 
         if(i<10):
-            df = pd.read_parquet(f'../data/raw_parquets/train-0000{i}-of-00015.parquet')
+            df = pd.read_parquet(f'./data/raw_parquets/train-0000{str(i)}-of-00015.parquet', engine="pyarrow")
         else:
-            df = pd.read_parquet(f'../data/raw_parquets/train-000{i}-of-00015.parquet')
+            df = pd.read_parquet(f'./data/raw_parquets/train-000{str(i)}-of-00015.parquet', engine="pyarrow")
 
         for idx, row in df.iterrows():
                     try:
@@ -69,12 +69,13 @@ def convert_parquet_to_waveform():
 def convert_waveform_to_mel_spec():
     #Load the audio files from waveforms folder and convert to mel spectrograms
     total_counter = 0
-    max_len = SAMPLE_RATE * CLIP_LENGTH
+
+    max_len = int(SAMPLE_RATE * CLIP_LENGTH)
 
     for i in range(0,15):
         counter = 0
-        directory = f'../data/waveforms/{i}-of-15'
-        out_dir = f'../data/mels/{i}-of-15'
+        directory = f'./data/waveforms/{i}-of-15'
+        out_dir = f'./data/mels/{i}-of-15'
         os.makedirs(out_dir, exist_ok=True)
 
 
@@ -99,7 +100,7 @@ def convert_waveform_to_mel_spec():
                                                     power=POWER)
                 #use log to get to human perceptive loudness levels
                 mel_log = np.log(np.clip(mel, 1e-5, None))
-                np.save(f"../data/mels/{i}-of-15/{filename}.npy", mel_log.astype(np.float32))
+                np.save(f"./data/mels/{i}-of-15/{filename}.npy", mel_log.astype(np.float32))
                 counter += 1
                 total_counter += 1
 
@@ -107,4 +108,5 @@ def convert_waveform_to_mel_spec():
 
     print("Total Number of waveforms converted: ", total_counter)
 
+#convert_parquet_to_waveform()
 convert_waveform_to_mel_spec()

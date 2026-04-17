@@ -1,6 +1,6 @@
-from mel_model import MelTransformerFrameBin, MelTransformerFrame
+from mel_model import MelTransformerFrameBin, MelTransformerFrame, MelTransformerFrameDelta
 from mel_dataset import MelMaskedDataset, get_dataset_splits
-from audio_train import train_mel, eval_frame, eval_framebin
+from audio_train import train_mel, eval_frame, eval_framebin, eval_frame_delta
 from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels, generate_waveforms
 import argparse
 import time
@@ -55,7 +55,8 @@ def main():
     
     parser.add_argument("--model", 
                         type=str, 
-                        default="MelTransformerFrame"
+                        default="MelTransformerFrame", 
+                        help="MelTransformerFrame, MelTransformerFrameBin, MelTransformerFrameDelta",
                         )
     
     parser.add_argument("--n_examples", 
@@ -120,24 +121,11 @@ def main():
 
     try:
         if(args.model == "MelTransformerFrameBin"):
-            model = MelTransformerFrameBin(
-            n_mels=N_MELS,
-            max_time_frames=max_time_frames, 
-            d_model=D_MODEL, 
-            n_heads=N_HEADS, 
-            n_layers=N_LAYERS,
-            dim_feedforward=D_FF,
-            dropout=DROPOUT, 
-            )
+            model = MelTransformerFrameBin(n_mels=N_MELS, max_time_frames=max_time_frames, d_model=D_MODEL, n_heads=N_HEADS, n_layers=N_LAYERS, dim_feedforward=D_FF, dropout=DROPOUT)
         elif(args.model == "MelTransformerFrame"):
-            model = MelTransformerFrame(
-            n_mels=N_MELS, 
-            d_model=D_MODEL, 
-            n_heads=N_HEADS, 
-            n_layers=N_LAYERS,
-            dim_feedforward=D_FF,
-            dropout=DROPOUT
-            )
+            model = MelTransformerFrame(n_mels=N_MELS, d_model=D_MODEL, n_heads=N_HEADS, n_layers=N_LAYERS, dim_feedforward=D_FF, dropout=DROPOUT)
+        elif(args.model == "MelTransformerFrameDelta"):
+            model = MelTransformerFrameDelta(n_mels=N_MELS, d_model=D_MODEL, n_heads=N_HEADS, n_layers=N_LAYERS, dim_feedforward=D_FF, dropout=DROPOUT)
         else:
             print("Unable to initialize...wrong model name")
             exit()
@@ -154,9 +142,9 @@ def main():
     start_time_train = time.perf_counter()
 
     if(args.save_model):
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=3, save_path=f"../outputs/{args.model}_best.pt")
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7, save_path=f"../outputs/{args.model}_best.pt")
     else:
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=3)
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7)
 
     end_time_train = time.perf_counter()
     elapsed_train = end_time_train - start_time_train
@@ -171,6 +159,8 @@ def main():
         results = eval_frame(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
     elif(args.model=="MelTransformerFrameBin"):
         results = eval_framebin(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
+    elif(args.model=="MelTransformerFrameDelta"):
+        results = eval_frame_delta(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
 
     end_time_inference = time.perf_counter()
     elapsed_inference = end_time_inference - start_time_inference
@@ -186,7 +176,6 @@ def main():
     avg_mae_model=0
     avg_mse_baseline=0
     avg_mae_baseline=0
-    avg_mse_improvement=0
 
     if(args.outputs):
         for ground_truth_mel, predicted_mel, baseline_mel, filepath, metrics in results:
@@ -194,7 +183,6 @@ def main():
             avg_mae_model+=metrics['mae_model']
             avg_mse_baseline+=metrics['mse_baseline']
             avg_mae_baseline+=metrics['mae_baseline']
-            avg_mse_improvement+=metrics['improvement']
             compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
             generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
 
@@ -203,9 +191,10 @@ def main():
     print(f"Reconstruction completed in {elapsed_reconstruct:.2f} seconds ({elapsed_reconstruct/60:.2f} minutes)")
 
     print("--------------------------")
+    avg_mse_improvement = (avg_mse_baseline - avg_mse_model) / (avg_mse_baseline + 1e-8)
     print(f"Avg MSE Model: {avg_mse_model/args.n_examples} , Avg MAE Model: {avg_mae_model/args.n_examples}")
     print(f"Avg MSE Baseline: {avg_mse_baseline/args.n_examples}, Avg MAE Baseline: {avg_mae_baseline/args.n_examples}")
-    print(f"Avg MSE Improvement Compared to Baseline: {avg_mse_improvement/args.n_examples}")
+    print(f"Avg MSE Improvement Compared to Baseline: {avg_mse_improvement}")
 
 if __name__ == "__main__":
     main()
