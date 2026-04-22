@@ -11,6 +11,10 @@ import librosa
 import os
 from datetime import datetime
 
+stats = np.load("../mel_stats.npz")
+mel_mean = stats["mean"]
+mel_std  = stats["std"]
+
 def write_to_waveform(filename, mel_tensor, generator, sr):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -51,6 +55,10 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
     baseline_np = baseline.detach().cpu().numpy().T
+
+    gt_np = gt_np * mel_std[:, None] + mel_mean[:, None]
+    pred_np = pred_np * mel_std[:, None] + mel_mean[:, None]
+    baseline_np = baseline_np * mel_std[:, None] + mel_mean[:, None]
 
     #print("gt_np.shape: ", gt_np.shape)
     #print("pred_np.shape: ", pred_np.shape)
@@ -114,14 +122,20 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
     plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
     plt.close()
 
-def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, output_dir="../outputs"):
+def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power, output_dir="../outputs"):
     #generate waveforms of predicted and also ground truth with griffin lim for a fair reconstruction comparison
     gt_np = groundtruth.detach().cpu().numpy().T
     pred_np = predmel.detach().cpu().numpy().T
-    baseline_np = predmel.detach().cpu().numpy().T
+    baseline_np = baseline.detach().cpu().numpy().T
 
     #print("gt_np.shape: ", gt_np.shape)
     #print("pred_np.shape: ", pred_np.shape)
+    
+    #denorm and then undo log
+    gt_np = gt_np * mel_std[:, None] + mel_mean[:, None]
+    pred_np = pred_np * mel_std[:, None] + mel_mean[:, None]
+    baseline_np = baseline_np * mel_std[:, None] + mel_mean[:, None]
+
     # Undo natural log
     gt_np = np.exp(gt_np)
     pred_np = np.exp(pred_np)
@@ -129,16 +143,16 @@ def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sam
 
     filename = os.path.basename(filepath).rstrip(".npy")
     
-    audio_pred = _get_waveform(pred_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
-    audio_gt = _get_waveform(gt_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
-    audio_base = _get_waveform(baseline_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax)
+    audio_pred = _get_waveform(pred_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
+    audio_gt = _get_waveform(gt_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
+    audio_base = _get_waveform(baseline_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
 
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_pred.wav", audio_pred, sample_rate)
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_gt.wav", audio_gt, sample_rate)
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_bl.wav", audio_base, sample_rate)
 
 
-def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax):
+def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power):
     audio = librosa.feature.inverse.mel_to_audio(
         mel,
         sr=sample_rate,
@@ -147,7 +161,8 @@ def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin,
         n_iter=n_iter, #number of iterations for griffin lim
         win_length=win_length, 
         fmin=fmin, 
-        fmax=fmax
+        #fmax=fmax, 
+        power=power
     )
     #ensure amplitudes are in safe range and doesn't blow speakers
     audio /= (np.max(np.abs(audio)) + 1e-9)

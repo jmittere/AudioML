@@ -70,6 +70,12 @@ def main():
                         help="True = Save model, False = Don't save model, Default=False",
                         default=False
                         )
+    
+    parser.add_argument("--patience", 
+                        type=int, 
+                        help="Number of Epochs for early stopping",
+                        default=7
+                        )
 
     args = parser.parse_args()
 
@@ -108,11 +114,14 @@ def main():
     
     full_dataset = MelMaskedDataset(
     mel_dir=args.mel_dir,
+    n_mels=N_MELS,
     mask_seconds=MASK_SECONDS, 
     total_clip_length=CLIP_LENGTH,
     sr=SAMPLE_RATE, 
     hop_length= HOP_LENGTH, 
-    max_songs=MAX_SONGS 
+    max_songs=MAX_SONGS, 
+    normalize=True, 
+    stats_path="../mel_stats.npz" 
     )
 
     train_set, val_set = get_dataset_splits(full_dataset, args.train_split)
@@ -142,9 +151,9 @@ def main():
     start_time_train = time.perf_counter()
 
     if(args.save_model):
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7, save_path=f"../outputs/{args.model}_best.pt")
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=args.patience, save_path=f"../outputs/{args.model}_best.pt")
     else:
-        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=7)
+        train_mel(model_type=args.model, model=model, train_dataset=train_set, val_dataset=val_set, num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=output_dir, patience=args.patience)
 
     end_time_train = time.perf_counter()
     elapsed_train = end_time_train - start_time_train
@@ -184,7 +193,7 @@ def main():
             avg_mse_baseline+=metrics['mse_baseline']
             avg_mae_baseline+=metrics['mae_baseline']
             compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
-            generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=128, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX, output_dir=output_dir)
+            generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
 
     end_time_reconstruct = time.perf_counter()
     elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct

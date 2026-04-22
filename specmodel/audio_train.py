@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4, output_dir="../outputs", patience=7, min_delta=1e-4, save_path=None):
+def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batch_size=4, lr=1e-4, output_dir="../outputs", patience=7, min_delta=1e-5, save_path=None):
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=False)

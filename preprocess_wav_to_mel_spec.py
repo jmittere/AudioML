@@ -9,6 +9,8 @@ import soundfile as sf
 import pandas as pd
 import re
 import json
+import glob
+from tqdm import tqdm
 
 try:
     with open('./specmodel/config.json', 'r') as file:
@@ -95,11 +97,11 @@ def convert_waveform_to_mel_spec():
                                                     hop_length=HOP_LENGTH,
                                                     win_length=WIN_LENGTH,
                                                     fmin=FMIN, 
-                                                    fmax=FMAX, 
+                                                    #fmax=FMAX, 
                                                     n_mels=N_MELS, 
                                                     power=POWER)
                 #use log to get to human perceptive loudness levels
-                mel_log = np.log(np.clip(mel, 1e-5, None))
+                mel_log = np.log(np.clip(mel, 1e-8, None))
                 np.save(f"./data/mels/{i}-of-15/{filename}.npy", mel_log.astype(np.float32))
                 counter += 1
                 total_counter += 1
@@ -108,5 +110,40 @@ def convert_waveform_to_mel_spec():
 
     print("Total Number of waveforms converted: ", total_counter)
 
+def normalize_stats():
+    mel_files = glob.glob("./data/mels/**/*.npy", recursive=True)
+
+    sum_ = None
+    sum_sq = None
+    count = 0
+
+    for f in tqdm(mel_files):
+        mel = np.load(f)      # (80, T)
+        mel = mel.T           # (T, 80)
+
+        if sum_ is None:
+            sum_ = np.zeros(mel.shape[1])
+            sum_sq = np.zeros(mel.shape[1])
+
+        sum_ += mel.sum(axis=0)            # sum over time
+        sum_sq += (mel ** 2).sum(axis=0)
+        count += mel.shape[0]
+
+    mean = sum_ / count
+    std = np.sqrt(sum_sq / count - mean**2)
+
+    # safety clamp
+    std = np.where(std < 1e-6, 1e-6, std)
+
+    np.savez("mel_stats.npz", mean=mean, std=std)
+
+    print("Saved mel_stats.npz")
+    print("Mean shape:", mean.shape)
+    print("Std shape:", std.shape)
+    print("Mean range:", mean.min(), mean.max())
+    print("Std range:", std.min(), std.max())
+
+
 #convert_parquet_to_waveform()
 convert_waveform_to_mel_spec()
+normalize_stats() 
