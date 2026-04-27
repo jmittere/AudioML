@@ -118,8 +118,10 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
     )
     plt.title("Baseline")
     plt.colorbar(img3, format="%+2.0f", label="Log Mel energy (natural log not dB)")
-
-    plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
+    try:
+        plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
+    except: 
+        print(f"Unable to savefig for {filename}")
     plt.close()
 
 def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power, output_dir="../outputs"):
@@ -145,11 +147,11 @@ def generate_waveforms(filepath, model_type, groundtruth, predmel, baseline, sam
     
     audio_pred = _get_waveform(pred_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
     audio_gt = _get_waveform(gt_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
-    audio_base = _get_waveform(baseline_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
+    #audio_base = _get_waveform(baseline_np, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power)
 
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_pred.wav", audio_pred, sample_rate)
     sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_gt.wav", audio_gt, sample_rate)
-    sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_bl.wav", audio_base, sample_rate)
+    #sf.write(f"{output_dir}/mel_debug_{model_type}_{filename}_bl.wav", audio_base, sample_rate)
 
 
 def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin, fmax, power):
@@ -160,7 +162,7 @@ def _get_waveform(mel, sample_rate, n_fft, hop_length, n_iter, win_length, fmin,
         hop_length=hop_length,
         n_iter=n_iter, #number of iterations for griffin lim
         win_length=win_length, 
-        fmin=fmin, 
+        #fmin=fmin, 
         #fmax=fmax, 
         power=power
     )

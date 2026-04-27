@@ -96,7 +96,7 @@ def convert_waveform_to_mel_spec():
                                                     n_fft=N_FFT,
                                                     hop_length=HOP_LENGTH,
                                                     win_length=WIN_LENGTH,
-                                                    fmin=FMIN, 
+                                                    #fmin=FMIN, 
                                                     #fmax=FMAX, 
                                                     n_mels=N_MELS, 
                                                     power=POWER)

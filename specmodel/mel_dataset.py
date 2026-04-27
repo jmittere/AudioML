@@ -77,7 +77,7 @@ class MelMaskedDataset(Dataset):
         TARGET_FRAMES = int(self.total_clip_length * self.sr / self.hop_length)
 
         if mel.shape[0] > TARGET_FRAMES:
-            mel = mel[:TARGET_FRAMES]
+            mel = mel[-TARGET_FRAMES:]
         elif mel.shape[0] < TARGET_FRAMES:
             pad_len = TARGET_FRAMES - mel.shape[0]
 

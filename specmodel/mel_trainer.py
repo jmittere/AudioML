@@ -4,6 +4,7 @@ from audio_train import train_mel, eval_frame, eval_framebin, eval_frame_delta
 from mel_utils import write_to_waveform, get_hifi_gan_generator, compare_mels, generate_waveforms
 import argparse
 import time
+import numpy as np
 
 import json
 import sys
@@ -145,7 +146,10 @@ def main():
         exit()    
     print("--------------------------")
     print(f"Beginning Mel Training for {args.model}...")
-    print(f"{args.model}: n_mels: {N_MELS}, d_model: {D_MODEL}, n_heads: {N_HEADS}, n_layers: {N_LAYERS}, dim_feedforward : {D_FF}, dropout: {DROPOUT}")
+    print(f"{args.model}: n_mels: {N_MELS}, d_model: {D_MODEL}, n_heads: {N_HEADS}, n_layers: {N_LAYERS}, dim_feedforward : {D_FF}, dropout: {DROPOUT}, lr: {args.lr}")
+    total_params = sum(p.numel() for p in model.parameters())
+    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Model Params: {total_params}, Trainable Params: {total_trainable_params}")
     print("--------------------------")
 
     start_time_train = time.perf_counter()
@@ -164,12 +168,15 @@ def main():
         
     start_time_inference = time.perf_counter()
 
+    rng = np.random.RandomState(args.seed)
+    val_indices = rng.choice(len(val_set), size=args.n_examples, replace=False)
+
     if(args.model=="MelTransformerFrame"):
-        results = eval_frame(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
+        results = eval_frame(model, val_set, seed_seconds=seed_frames, val_indices=val_indices)
     elif(args.model=="MelTransformerFrameBin"):
-        results = eval_framebin(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
+        results = eval_framebin(model, val_set, seed_seconds=seed_frames, val_indices=val_indices)
     elif(args.model=="MelTransformerFrameDelta"):
-        results = eval_frame_delta(model, val_set, num_examples=args.n_examples, seed_seconds=seed_frames)
+        results = eval_frame_delta(model, val_set, seed_seconds=seed_frames, val_indices=val_indices)
 
     end_time_inference = time.perf_counter()
     elapsed_inference = end_time_inference - start_time_inference
@@ -185,6 +192,7 @@ def main():
     avg_mae_model=0
     avg_mse_baseline=0
     avg_mae_baseline=0
+    avg_per_sample_improvement=0 #how much is the model better than the baseline on average
 
     if(args.outputs):
         for ground_truth_mel, predicted_mel, baseline_mel, filepath, metrics in results:
@@ -192,8 +200,9 @@ def main():
             avg_mae_model+=metrics['mae_model']
             avg_mse_baseline+=metrics['mse_baseline']
             avg_mae_baseline+=metrics['mae_baseline']
+            avg_per_sample_improvement+=metrics['improvement']
             compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
-            generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
+            #generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
 
     end_time_reconstruct = time.perf_counter()
     elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct
@@ -203,7 +212,9 @@ def main():
     avg_mse_improvement = (avg_mse_baseline - avg_mse_model) / (avg_mse_baseline + 1e-8)
     print(f"Avg MSE Model: {avg_mse_model/args.n_examples} , Avg MAE Model: {avg_mae_model/args.n_examples}")
     print(f"Avg MSE Baseline: {avg_mse_baseline/args.n_examples}, Avg MAE Baseline: {avg_mae_baseline/args.n_examples}")
-    print(f"Avg MSE Improvement Compared to Baseline: {avg_mse_improvement}")
+    print(f"Avg MSE Improvement Compared to Baseline, Global MSE Reduction: {avg_mse_improvement}")
+    print(f"Avg per Sample Improvement over Baseline, Mean Per-Sample Improvement: {avg_per_sample_improvement / args.n_examples}")
+
 
 if __name__ == "__main__":
     main()

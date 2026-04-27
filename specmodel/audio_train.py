@@ -16,6 +16,7 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
     model = model.to(device)
     print("Device: ", next(model.parameters()).device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, threshold=min_delta)
     criterion = torch.nn.MSELoss()
     train_losses = []
     val_losses = []
@@ -50,9 +51,10 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
             avg_val_loss = validate_frame_delta(model, val_dataloader, criterion)
 
         val_losses.append(avg_val_loss)
-
-        print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}")
-
+        scheduler.step(avg_val_loss)
+        current_lr = scheduler.get_last_lr()[0]
+        print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}, Current LR: {current_lr:.6f}")
+        
         #Early stopping
         if avg_val_loss < best_val_loss - min_delta:
             best_val_loss = avg_val_loss
@@ -125,12 +127,12 @@ def validate_framebin(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_framebin(model, dataset,num_examples=1, seed_seconds=7.0, sr=22050, hop_length=256):
+def eval_framebin(model, dataset, val_indices, seed_seconds=7.0, sr=22050, hop_length=256):
     model.eval()
 
     results=[]
 
-    for i in range(num_examples):
+    for i in val_indices:
         mel, filepath = dataset[i]  # (T, F)
         mel = mel.to(device)
 
@@ -211,12 +213,12 @@ def validate_frame(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_frame(model, dataset, num_examples, seed_seconds, sr=22050, hop_length=256):
+def eval_frame(model, dataset, seed_seconds, val_indices, sr=22050, hop_length=256):
     model.eval()
 
     results = []
 
-    for i in range(num_examples):
+    for i in val_indices:
 
         mel, filepath = dataset[i]  # (T, 80)
         mel = mel.to(device)
@@ -282,12 +284,12 @@ def validate_frame_delta(model, dataloader, criterion):
 
     return total_loss / len(dataloader)
 
-def eval_frame_delta(model, dataset, num_examples, seed_seconds, sr=22050, hop_length=256):
+def eval_frame_delta(model, dataset, seed_seconds, val_indices, sr=22050, hop_length=256):
     model.eval()
 
     results = []
 
-    for i in range(num_examples):
+    for i in val_indices:
 
         mel, filepath = dataset[i]
         mel = mel.to(device)
