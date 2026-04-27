@@ -1,0 +1,124 @@
+python mel_trainer.py --model MelTransformerFrameDelta --epochs 100 --batch_size 4 --n_examples 300 > terminal_framedelta80__out.txt
+
+Train dataset length:  6332
+Validation dataset length:  1583
+--------------------------
+Beginning Mel Training for MelTransformerFrameDelta...
+MelTransformerFrameDelta: n_mels: 80, d_model: 256, n_heads: 4, n_layers: 4, dim_feedforward : 1024, dropout: 0.1, lr: 0.0001
+Model Params: 3712336, Trainable Params: 3712336
+--------------------------
+Device:  cuda:0
+Epoch 1: avg_train_loss = 0.0639, avg_val_loss = 0.0582, Current LR: 0.000100
+Epoch 2: avg_train_loss = 0.0582, avg_val_loss = 0.0578, Current LR: 0.000100
+Epoch 3: avg_train_loss = 0.0578, avg_val_loss = 0.0574, Current LR: 0.000100
+Epoch 4: avg_train_loss = 0.0575, avg_val_loss = 0.0571, Current LR: 0.000100
+Epoch 5: avg_train_loss = 0.0570, avg_val_loss = 0.0569, Current LR: 0.000100
+Epoch 6: avg_train_loss = 0.0567, avg_val_loss = 0.0567, Current LR: 0.000100
+Epoch 7: avg_train_loss = 0.0564, avg_val_loss = 0.0564, Current LR: 0.000100
+Epoch 8: avg_train_loss = 0.0559, avg_val_loss = 0.0554, Current LR: 0.000100
+Epoch 9: avg_train_loss = 0.0550, avg_val_loss = 0.0542, Current LR: 0.000100
+Epoch 10: avg_train_loss = 0.0540, avg_val_loss = 0.0531, Current LR: 0.000100
+Epoch 11: avg_train_loss = 0.0530, avg_val_loss = 0.0520, Current LR: 0.000100
+Epoch 12: avg_train_loss = 0.0521, avg_val_loss = 0.0523, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 13: avg_train_loss = 0.0515, avg_val_loss = 0.0506, Current LR: 0.000100
+Epoch 14: avg_train_loss = 0.0510, avg_val_loss = 0.0501, Current LR: 0.000100
+Epoch 15: avg_train_loss = 0.0505, avg_val_loss = 0.0497, Current LR: 0.000100
+Epoch 16: avg_train_loss = 0.0502, avg_val_loss = 0.0492, Current LR: 0.000100
+Epoch 17: avg_train_loss = 0.0497, avg_val_loss = 0.0493, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 18: avg_train_loss = 0.0494, avg_val_loss = 0.0488, Current LR: 0.000100
+Epoch 19: avg_train_loss = 0.0489, avg_val_loss = 0.0485, Current LR: 0.000100
+Epoch 20: avg_train_loss = 0.0487, avg_val_loss = 0.0485, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 21: avg_train_loss = 0.0484, avg_val_loss = 0.0482, Current LR: 0.000100
+Epoch 22: avg_train_loss = 0.0479, avg_val_loss = 0.0479, Current LR: 0.000100
+Epoch 23: avg_train_loss = 0.0475, avg_val_loss = 0.0478, Current LR: 0.000100
+Epoch 24: avg_train_loss = 0.0472, avg_val_loss = 0.0482, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 25: avg_train_loss = 0.0470, avg_val_loss = 0.0475, Current LR: 0.000100
+Epoch 26: avg_train_loss = 0.0475, avg_val_loss = 0.0473, Current LR: 0.000100
+Epoch 27: avg_train_loss = 0.0465, avg_val_loss = 0.0471, Current LR: 0.000100
+Epoch 28: avg_train_loss = 0.0463, avg_val_loss = 0.0471, Current LR: 0.000100
+Epoch 29: avg_train_loss = 0.0462, avg_val_loss = 0.0470, Current LR: 0.000100
+Epoch 30: avg_train_loss = 0.0459, avg_val_loss = 0.0469, Current LR: 0.000100
+Epoch 31: avg_train_loss = 0.0456, avg_val_loss = 0.0469, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 32: avg_train_loss = 0.0454, avg_val_loss = 0.0466, Current LR: 0.000100
+Epoch 33: avg_train_loss = 0.0453, avg_val_loss = 0.0465, Current LR: 0.000100
+Epoch 34: avg_train_loss = 0.0450, avg_val_loss = 0.0466, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 35: avg_train_loss = 0.0448, avg_val_loss = 0.0464, Current LR: 0.000100
+Epoch 36: avg_train_loss = 0.0447, avg_val_loss = 0.0463, Current LR: 0.000100
+Epoch 37: avg_train_loss = 0.0445, avg_val_loss = 0.0462, Current LR: 0.000100
+Epoch 38: avg_train_loss = 0.0444, avg_val_loss = 0.0462, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 39: avg_train_loss = 0.0443, avg_val_loss = 0.0460, Current LR: 0.000100
+Epoch 40: avg_train_loss = 0.0441, avg_val_loss = 0.0460, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 41: avg_train_loss = 0.0437, avg_val_loss = 0.0460, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 42: avg_train_loss = 0.0437, avg_val_loss = 0.0457, Current LR: 0.000100
+Epoch 43: avg_train_loss = 0.0436, avg_val_loss = 0.0458, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 44: avg_train_loss = 0.0434, avg_val_loss = 0.0458, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 45: avg_train_loss = 0.0433, avg_val_loss = 0.0457, Current LR: 0.000100
+Epoch 46: avg_train_loss = 0.0431, avg_val_loss = 0.0459, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 47: avg_train_loss = 0.0430, avg_val_loss = 0.0457, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 48: avg_train_loss = 0.0429, avg_val_loss = 0.0454, Current LR: 0.000100
+Epoch 49: avg_train_loss = 0.0428, avg_val_loss = 0.0459, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 50: avg_train_loss = 0.0426, avg_val_loss = 0.0454, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 51: avg_train_loss = 0.0424, avg_val_loss = 0.0456, Current LR: 0.000100
+No improvement for 3 epochs
+Epoch 52: avg_train_loss = 0.0423, avg_val_loss = 0.0453, Current LR: 0.000100
+Epoch 53: avg_train_loss = 0.0423, avg_val_loss = 0.0454, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 54: avg_train_loss = 0.0424, avg_val_loss = 0.0453, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 55: avg_train_loss = 0.0420, avg_val_loss = 0.0451, Current LR: 0.000100
+Epoch 56: avg_train_loss = 0.0419, avg_val_loss = 0.0452, Current LR: 0.000100
+No improvement for 1 epochs
+Epoch 57: avg_train_loss = 0.0419, avg_val_loss = 0.0453, Current LR: 0.000100
+No improvement for 2 epochs
+Epoch 58: avg_train_loss = 0.0417, avg_val_loss = 0.0453, Current LR: 0.000100
+No improvement for 3 epochs
+Epoch 59: avg_train_loss = 0.0416, avg_val_loss = 0.0453, Current LR: 0.000010
+No improvement for 4 epochs
+Epoch 60: avg_train_loss = 0.0411, avg_val_loss = 0.0447, Current LR: 0.000010
+Epoch 61: avg_train_loss = 0.0408, avg_val_loss = 0.0447, Current LR: 0.000010
+No improvement for 1 epochs
+Epoch 62: avg_train_loss = 0.0407, avg_val_loss = 0.0448, Current LR: 0.000010
+No improvement for 2 epochs
+Epoch 63: avg_train_loss = 0.0407, avg_val_loss = 0.0447, Current LR: 0.000010
+Epoch 64: avg_train_loss = 0.0406, avg_val_loss = 0.0447, Current LR: 0.000010
+Epoch 65: avg_train_loss = 0.0406, avg_val_loss = 0.0447, Current LR: 0.000010
+No improvement for 1 epochs
+Epoch 66: avg_train_loss = 0.0405, avg_val_loss = 0.0446, Current LR: 0.000010
+Epoch 67: avg_train_loss = 0.0405, avg_val_loss = 0.0447, Current LR: 0.000010
+No improvement for 1 epochs
+Epoch 68: avg_train_loss = 0.0405, avg_val_loss = 0.0447, Current LR: 0.000010
+No improvement for 2 epochs
+Epoch 69: avg_train_loss = 0.0404, avg_val_loss = 0.0447, Current LR: 0.000010
+No improvement for 3 epochs
+Epoch 70: avg_train_loss = 0.0404, avg_val_loss = 0.0447, Current LR: 0.000001
+No improvement for 4 epochs
+Epoch 71: avg_train_loss = 0.0403, avg_val_loss = 0.0447, Current LR: 0.000001
+No improvement for 5 epochs
+Epoch 72: avg_train_loss = 0.0403, avg_val_loss = 0.0446, Current LR: 0.000001
+No improvement for 6 epochs
+Epoch 73: avg_train_loss = 0.0403, avg_val_loss = 0.0446, Current LR: 0.000001
+No improvement for 7 epochs
+Early stopping triggered after 73 epochs
+Training completed in 1738.67 seconds (28.98 minutes)
+Inference completed in 56.71 seconds (0.95 minutes)
+Reconstruction completed in 190.46 seconds (3.17 minutes)
+--------------------------
+Avg MSE Model: 0.5555888319512209 , Avg MAE Model: 0.5229028822481632
+Avg MSE Baseline: 0.522339272921284, Avg MAE Baseline: 0.5156959103047848
+Avg MSE Improvement Compared to Baseline, Global MSE Reduction: -0.06365510071999818
+Avg per Sample Improvement over Baseline, Mean Per-Sample Improvement: -0.06462827487004688

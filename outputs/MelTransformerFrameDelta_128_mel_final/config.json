@@ -1,0 +1,19 @@
+{
+  "n_mels": 128, 
+  "sample_rate": 22050, 
+  "n_fft": 1024,
+  "win_length": 1024, 
+  "hop_length": 256,
+  "fmin": 0, 
+  "fmax": 8000.0,
+  "power": 2.0,
+  "log_type": "natural",
+  "clip_length": 6.0,
+  "mask_seconds": 1.0, 
+  "d_model": 256,
+  "n_heads": 4,
+  "n_layers": 4,
+  "dim_feedforward" : 1024,
+  "dropout": 0.1, 
+  "max_songs": 8000
+}
