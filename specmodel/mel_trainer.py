@@ -125,6 +125,8 @@ def main():
     stats_path="../mel_stats.npz" 
     )
 
+    print("Mel Shape: ", full_dataset.get_mel_shape())
+
     train_set, val_set = get_dataset_splits(full_dataset, args.train_split)
     print("Train dataset length: ", len(train_set))
     print("Validation dataset length: ", len(val_set))
@@ -201,8 +203,11 @@ def main():
             avg_mse_baseline+=metrics['mse_baseline']
             avg_mae_baseline+=metrics['mae_baseline']
             avg_per_sample_improvement+=metrics['improvement']
-            compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
-            #generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
+            try:
+                compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
+                generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
+            except:
+                print(f"comparison and generation failed for {filepath}")
 
     end_time_reconstruct = time.perf_counter()
     elapsed_reconstruct = end_time_reconstruct - start_time_reconstruct
