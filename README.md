@@ -21,7 +21,7 @@ The training pipeline:
 # File Overview
 
 Main training script example in specmodel/ with args:
-
+Training one of the three models can be done by running the mel_trainer.py script in the specmodel/ folder after the prerequisite preprocess_wav_to_mel_spec.py script has been run. There are numerous arguments available for mel_trainer to customize training behavior, and control the resulting output. 
 ```bash
 python mel_trainer.py --model MelTransformerFrame --epochs 30 --save_model True --n_examples 300 --patience 7
  
