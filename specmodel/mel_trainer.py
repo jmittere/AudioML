@@ -10,7 +10,7 @@ import json
 import sys
 import os
 
-sys.path.append('../')
+sys.path.append("../")
 
 def main(): 
     parser = argparse.ArgumentParser(description="Train model to predict mel spec frames")
@@ -84,32 +84,31 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     try:
-        with open('config.json', 'r') as file:
+        with open("config.json", "r", encoding="utf-8") as file:
             mel_config = json.load(file)
     except FileNotFoundError:
         print("Error: Mel config.json was not found.")
         exit()
 
     #MEL SPEC PARAMS
-    N_MELS = mel_config['n_mels']
-    SAMPLE_RATE = mel_config['sample_rate']
-    N_FFT = mel_config['n_fft']
-    WIN_LENGTH = mel_config['win_length']
-    HOP_LENGTH = mel_config['hop_length']
-    FMIN = mel_config['fmin']
-    FMAX = mel_config['fmax']
-    POWER = mel_config['power']
-    LOG_TYPE = mel_config['log_type']
-    CLIP_LENGTH= mel_config['clip_length'] #in seconds
-    MASK_SECONDS= mel_config['mask_seconds'] #in seconds
+    N_MELS = mel_config["n_mels"]
+    SAMPLE_RATE = mel_config["sample_rate"]
+    N_FFT = mel_config["n_fft"]
+    WIN_LENGTH = mel_config["win_length"]
+    HOP_LENGTH = mel_config["hop_length"]
+    FMIN = mel_config["fmin"]
+    FMAX = mel_config["fmax"]
+    POWER = mel_config["power"]
+    CLIP_LENGTH= mel_config["clip_length"] #in seconds
+    MASK_SECONDS= mel_config["mask_seconds"] #in seconds
 
     #MODEL PARAMS
-    D_MODEL = mel_config['d_model']
-    N_HEADS = mel_config['n_heads']
-    N_LAYERS = mel_config['n_layers']
-    D_FF = mel_config['dim_feedforward']
-    DROPOUT = mel_config['dropout']
-    MAX_SONGS = mel_config['max_songs']
+    D_MODEL = mel_config["d_model"]
+    N_HEADS = mel_config["n_heads"]
+    N_LAYERS = mel_config["n_layers"]
+    D_FF = mel_config["dim_feedforward"]
+    DROPOUT = mel_config["dropout"]
+    MAX_SONGS = mel_config["max_songs"]
 
     max_time_frames = int(CLIP_LENGTH * SAMPLE_RATE / HOP_LENGTH)
     
@@ -142,7 +141,7 @@ def main():
             print("Unable to initialize...wrong model name")
             exit()
 
-    except Exception as e: 
+    except RuntimeError as e: 
         print("Unable to initialize")
         print(e)
         exit()    
@@ -198,15 +197,16 @@ def main():
 
     if(args.outputs):
         for ground_truth_mel, predicted_mel, baseline_mel, filepath, metrics in results:
-            avg_mse_model+=metrics['mse_model']
-            avg_mae_model+=metrics['mae_model']
-            avg_mse_baseline+=metrics['mse_baseline']
-            avg_mae_baseline+=metrics['mae_baseline']
-            avg_per_sample_improvement+=metrics['improvement']
+            avg_mse_model+=metrics["mse_model"]
+            avg_mae_model+=metrics["mae_model"]
+            avg_mse_baseline+=metrics["mse_baseline"]
+            avg_mae_baseline+=metrics["mae_baseline"]
+            avg_per_sample_improvement+=metrics["improvement"]
             try:
                 compare_mels(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel, baseline=baseline_mel, sample_rate=SAMPLE_RATE, hop_length=HOP_LENGTH, output_dir=output_dir)
                 generate_waveforms(filepath=filepath, model_type=args.model, groundtruth=ground_truth_mel, predmel=predicted_mel,baseline=baseline_mel, sample_rate=SAMPLE_RATE, n_fft=N_FFT, hop_length=HOP_LENGTH, n_iter=256, win_length=WIN_LENGTH, fmin=FMIN, fmax=FMAX,power=POWER, output_dir=output_dir)
-            except:
+            except RuntimeError as e:
+                print(e)
                 print(f"comparison and generation failed for {filepath}")
 
     end_time_reconstruct = time.perf_counter()

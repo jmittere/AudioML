@@ -172,7 +172,7 @@ def train_step_frame(model, criterion, optimizer, mel,scheduled_sampling_prob=0.
     x_input  = mel[:, :-1, :]   # (B, T-1, 80)
     x_target = mel[:, 1:, :]    # (B, T-1, 80)
 
-    B, T, F = x_input.shape
+    B, T, _ = x_input.shape
     with torch.no_grad():
         preds = model(x_input)
 

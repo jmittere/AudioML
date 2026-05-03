@@ -7,7 +7,7 @@ import glob
 import random
 
 try:
-    with open("config.json", "r") as file:
+    with open("config.json", "r", encoding="utf-8") as file:
         mel_config = json.load(file)
 except FileNotFoundError:
     print("Error: Mel config.json was not found.")
@@ -38,7 +38,7 @@ class MelMaskedDataset(Dataset):
         sr=22050, #sampling rate of spectrogram
         hop_length=256, #number of samples between frames
         max_songs=527, #number of songs in dataset for training and val
-        seed=42, 
+        seed=42,
         normalize=True,
         stats_path="../mel_stats.npz"
     ):

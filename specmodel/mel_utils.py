@@ -3,7 +3,7 @@ import numpy as np
 import soundfile as sf
 import json
 import sys
-sys.path.append('../hifi-gan')
+sys.path.append("../hifi-gan")
 from models import Generator
 from env import AttrDict
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ def write_to_waveform(filename, mel_tensor, generator, sr):
 
 def get_hifi_gan_generator():
     # Load config
-    with open("../hifi-gan/config_hifigan.json") as f:
+    with open("../hifi-gan/config_hifigan.json", encoding="utf-8") as f:
         config = json.load(f)
 
     h = AttrDict(config)
@@ -80,9 +80,9 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
         gt_np,
         hop_length=hop_length,
         sr=sample_rate,
-        x_axis='time',
-        y_axis='mel',
-        cmap='plasma',
+        x_axis="time",
+        y_axis="mel",
+        cmap="plasma",
         vmin=vmin,
         vmax=vmax
     )
@@ -95,9 +95,9 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
         pred_np,
         hop_length=hop_length,
         sr=sample_rate,
-        x_axis='time',
-        y_axis='mel',
-        cmap='plasma',
+        x_axis="time",
+        y_axis="mel",
+        cmap="plasma",
         vmin=vmin,
         vmax=vmax
     )
@@ -110,9 +110,9 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
         baseline_np,
         hop_length=hop_length,
         sr=sample_rate,
-        x_axis='time',
-        y_axis='mel',
-        cmap='plasma',
+        x_axis="time",
+        y_axis="mel",
+        cmap="plasma",
         vmin=vmin,
         vmax=vmax
     )
@@ -120,7 +120,8 @@ def compare_mels(filepath, model_type, groundtruth, predmel, baseline, sample_ra
     plt.colorbar(img3, format="%+2.0f", label="Log Mel energy (natural log not dB)")
     try:
         plt.savefig(f"{output_dir}/mel_debug_{model_type}_{filename}.png", dpi=300, bbox_inches="tight")
-    except: 
+    except OSError as e:
+        print(e) 
         print(f"Unable to savefig for {filename}")
     plt.close()
 

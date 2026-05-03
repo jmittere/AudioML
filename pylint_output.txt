@@ -1,0 +1,9 @@
+************* Module audio_train
+specmodel\audio_train.py:39:26: E0606: Possibly using variable 'loss' before assignment (possibly-used-before-assignment)
+specmodel\audio_train.py:52:26: E0606: Possibly using variable 'avg_val_loss' before assignment (possibly-used-before-assignment)
+************* Module mel_trainer
+specmodel\mel_trainer.py:4:0: W0611: Unused write_to_waveform imported from mel_utils (unused-import)
+specmodel\mel_trainer.py:4:0: W0611: Unused get_hifi_gan_generator imported from mel_utils (unused-import)
+************* Module mel_utils
+specmodel\mel_utils.py:158:75: W0613: Unused argument 'fmin' (unused-argument)
+specmodel\mel_utils.py:158:81: W0613: Unused argument 'fmax' (unused-argument)

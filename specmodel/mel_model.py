@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import math
 
 def generate_causal_mask(T, device):
-        mask = torch.triu(torch.ones(T, T, device=device), diagonal=1)
-        return mask.bool()
+    mask = torch.triu(torch.ones(T, T, device=device), diagonal=1)
+    return mask.bool()
 
 ###-- Used for Frame*Freq_bin auto regression --###
 class MelTransformerFrameBin(nn.Module):
@@ -44,14 +42,13 @@ class MelTransformerFrameBin(nn.Module):
         )
 
         self.output_proj = nn.Linear(d_model, 1)
-    
 
     def forward(self, x):
         # x: (B, L, 1)
 
         x = self.input_proj(x)  # (B, L, D)
 
-        B, L, D = x.shape
+        _, L, _ = x.shape
         F = self.n_mels
 
         T = (L + F - 1) // F  # ceil division
@@ -127,7 +124,7 @@ class MelTransformerFrame(nn.Module):
         x = self.output_proj(x)    # (B, T, 80)
     
         return x
-    
+        
 ###-- Used for Frame auto regression but predicts deltas between frames--###
 class MelTransformerFrameDelta(nn.Module):
     def __init__(
@@ -163,7 +160,6 @@ class MelTransformerFrameDelta(nn.Module):
 
         self.output_proj = nn.Linear(d_model, n_mels)
     
-
     def forward(self, x):
         # x: (B, T, 80)
 
