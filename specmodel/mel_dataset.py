@@ -7,21 +7,20 @@ import glob
 import random
 
 try:
-    with open('config.json', 'r') as file:
+    with open("config.json", "r") as file:
         mel_config = json.load(file)
 except FileNotFoundError:
     print("Error: Mel config.json was not found.")
     exit()
 
-SAMPLE_RATE = mel_config['sample_rate']
-N_MELS = mel_config['n_mels']
+SAMPLE_RATE = mel_config["sample_rate"]
+N_MELS = mel_config["n_mels"]
 
-def get_dataset_splits(full_dataset, split, seed=None):
-    #seed_gen = torch.Generator().manual_seed(seed)
+def get_dataset_splits(full_dataset, split, seed=42):
+    seed_gen = torch.Generator().manual_seed(seed)
     train_size = int(split*len(full_dataset))
     val_size = len(full_dataset) - train_size
-    #train_dataset, validation_dataset = random_split(full_dataset, [train_size, val_size], generator=seed_gen)
-    train_dataset, validation_dataset = random_split(full_dataset, [train_size, val_size])
+    train_dataset, validation_dataset = random_split(full_dataset, [train_size, val_size], generator=seed_gen)
     return train_dataset, validation_dataset
 
 def collate_fn(batch):
@@ -99,3 +98,4 @@ class MelMaskedDataset(Dataset):
         mel = np.load(filepath)
         mel = mel.T
         return mel.shape, type(mel)
+    

@@ -1,8 +1,7 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from mel_dataset import collate_fn, MelMaskedDataset
-from mel_model import MelTransformerFrameBin, MelTransformerFrame
+from mel_dataset import collate_fn
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -16,7 +15,7 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
     model = model.to(device)
     print("Device: ", next(model.parameters()).device)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, threshold=min_delta)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, threshold=min_delta)
     criterion = torch.nn.MSELoss()
     train_losses = []
     val_losses = []
@@ -31,11 +30,11 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
         progress = tqdm(train_dataloader,desc=f"Epoch {epoch}/{num_epochs}",leave=False)
 
         for mel, _ in progress:
-            if(model_type == "MelTransformerFrameBin"):
+            if model_type == "MelTransformerFrameBin":
                 loss = train_step_framebin(model, criterion, optimizer, mel)
-            elif(model_type == "MelTransformerFrame"):
+            elif model_type == "MelTransformerFrame":
                 loss = train_step_frame(model, criterion, optimizer, mel)
-            elif(model_type == "MelTransformerFrameDelta"):
+            elif model_type == "MelTransformerFrameDelta":
                 loss = train_step_frame_delta(model, criterion, optimizer, mel)
             total_loss += loss
             progress.set_postfix(train_loss=f"{loss:.4f}")
@@ -43,18 +42,17 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
         avg_loss = total_loss / len(train_dataloader)
         train_losses.append(avg_loss)
 
-        if(model_type == "MelTransformerFrameBin"):
+        if model_type == "MelTransformerFrameBin":
             avg_val_loss = validate_framebin(model, val_dataloader, criterion)
-        elif(model_type == "MelTransformerFrame"):
+        elif model_type == "MelTransformerFrame":
             avg_val_loss = validate_frame(model, val_dataloader, criterion)
-        elif(model_type == "MelTransformerFrameDelta"):
+        elif model_type == "MelTransformerFrameDelta":
             avg_val_loss = validate_frame_delta(model, val_dataloader, criterion)
 
         val_losses.append(avg_val_loss)
         scheduler.step(avg_val_loss)
         current_lr = scheduler.get_last_lr()[0]
         print(f"Epoch {epoch}: avg_train_loss = {avg_loss:.4f}, avg_val_loss = {avg_val_loss:.4f}, Current LR: {current_lr:.6f}")
-        
         #Early stopping
         if avg_val_loss < best_val_loss - min_delta:
             best_val_loss = avg_val_loss
@@ -76,10 +74,10 @@ def train_mel(model_type, model, train_dataset, val_dataset, num_epochs=50, batc
     # Plot the loss curve
     plt.plot(train_losses, label="Train Loss")
     plt.plot(val_losses, label="Validation Loss")
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
     plt.legend(loc="upper left")
-    plt.title('Training and Validation Loss')
+    plt.title("Training and Validation Loss")
     plt.savefig(f"{output_dir}/training vs val loss.png", dpi=300, bbox_inches="tight")
     plt.close()
 
@@ -179,7 +177,7 @@ def train_step_frame(model, criterion, optimizer, mel,scheduled_sampling_prob=0.
         preds = model(x_input)
 
     #Create mask for scheduled sampling
-    mask = (torch.rand(B, T, 1, device=x_input.device) < scheduled_sampling_prob)
+    mask = torch.rand(B, T, 1, device=x_input.device) < scheduled_sampling_prob
 
     #Mix ground truth and predictions
     x_mixed = torch.where(mask, preds, x_input)
@@ -204,7 +202,6 @@ def validate_frame(model, dataloader, criterion):
 
             x_input  = mel[:, :-1, :]
             x_target = mel[:, 1:, :]
-            
 
             preds = model(x_input)
 

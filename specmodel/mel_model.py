@@ -108,7 +108,6 @@ class MelTransformerFrame(nn.Module):
         )
 
         self.output_proj = nn.Linear(d_model, n_mels)
-    
 
     def forward(self, x):
         # x: (B, T, 80)
@@ -184,3 +183,4 @@ class MelTransformerFrameDelta(nn.Module):
         delta = self.output_proj(x)    # (B, T, 80)
     
         return delta
+    
